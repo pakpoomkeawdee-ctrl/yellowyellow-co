@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🍲 สุกี้ภัสสร — บันทึกยอดขายประจำวัน</title>
+<style>
+:root{
+  --rd:#7F0000;--rm:#B71C1C;--rl:#FFCDD2;--rp:#FFEBEE;--rb:#FFF5F5;
+  --od:#E65100;--ol:#FFF3E0;
+  --gd:#2E7D32;--gl:#E8F5E9;
+  --bd:#1565C0;--bl:#E3F2FD;
+  --yd:#F57F17;--yl:#FFFDE7;
+  --tx:#212121;--mu:#757575;
+  --sh:0 2px 8px rgba(0,0,0,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sarabun','Segoe UI',Arial,sans-serif;background:var(--rb);min-height:100vh;padding:14px;}
+.wrap{max-width:840px;margin:0 auto;display:flex;flex-direction:column;gap:12px;}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#4A0000,#7F0000);border-radius:14px;padding:18px 22px;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(127,0,0,.4);}
+.hdr-left h1{font-size:1.35rem;font-weight:800;}
+.hdr-left p{font-size:.78rem;opacity:.8;margin-top:2px;}
+.hdr-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.hdr-badge{background:rgba(255,255,255,.15);border-radius:8px;padding:7px 13px;text-align:center;white-space:nowrap;}
+.hdr-badge .lbl{font-size:.65rem;opacity:.8;}
+.hdr-badge .val{font-size:1.2rem;font-weight:800;}
+.btn-hdr{background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.4);color:#fff;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:.78rem;font-family:inherit;font-weight:600;white-space:nowrap;transition:all .15s;}
+.btn-hdr:hover{background:rgba(255,255,255,.3);}
+.btn-hdr.on{background:rgba(129,199,132,.4);border-color:#81C784;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:#fff;border-radius:16px;width:100%;max-width:480px;margin:auto;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.25);}
+.modal-hdr{background:linear-gradient(135deg,#4A0000,#7F0000);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;}
+.modal-hdr h2{font-size:1rem;font-weight:800;color:#fff;}
+.btn-close{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.85rem;}
+.modal-body{padding:20px;}
+.modal-url-section{margin-bottom:12px;}
+.modal-url-label{font-size:.82rem;font-weight:700;color:var(--tx);margin-bottom:8px;}
+.url-row{display:flex;gap:8px;flex-wrap:wrap;}
+.url-row input{flex:1;min-width:180px;border:1.5px solid #DDD;border-radius:8px;padding:8px 12px;font-size:.82rem;font-family:inherit;outline:none;}
+.url-row input:focus{border-color:var(--rm);}
+.btn-test{background:var(--yl);border:1.5px solid var(--yd);color:var(--od);border-radius:7px;padding:8px 12px;cursor:pointer;font-size:.78rem;font-family:inherit;font-weight:700;white-space:nowrap;}
+.btn-save-url{background:var(--gl);border:1.5px solid #A5D6A7;color:var(--gd);border-radius:7px;padding:8px 12px;cursor:pointer;font-size:.78rem;font-family:inherit;font-weight:700;white-space:nowrap;}
+.conn-status{font-size:.8rem;margin-top:8px;min-height:20px;}
+.modal-rec-label{font-size:.82rem;font-weight:700;color:var(--tx);margin-bottom:6px;margin-top:14px;}
+.modal-rec-row{display:flex;gap:8px;}
+.modal-rec-row input{flex:1;border:1.5px solid #DDD;border-radius:8px;padding:8px 12px;font-size:.82rem;font-family:inherit;outline:none;}
+.modal-rec-row input:focus{border-color:var(--rm);}
+.btn-save-rec{background:var(--gl);border:1.5px solid #A5D6A7;color:var(--gd);border-radius:7px;padding:8px 14px;cursor:pointer;font-size:.78rem;font-family:inherit;font-weight:700;white-space:nowrap;}
+
+/* CARD */
+.card{background:#fff;border-radius:14px;padding:16px;box-shadow:var(--sh);}
+.card-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.card-title-l{font-size:.95rem;font-weight:800;color:var(--rd);}
+.btn-section-edit{background:var(--rp);border:1.5px solid var(--rl);color:var(--rm);border-radius:7px;padding:5px 11px;cursor:pointer;font-size:.75rem;font-family:inherit;font-weight:700;}
+.btn-section-edit:hover{background:var(--rl);}
+.btn-section-edit.active{background:var(--gl);border-color:#A5D6A7;color:var(--gd);}
+
+/* GRID / FIELDS */
+.grid{display:grid;gap:10px;}
+.grid-2{grid-template-columns:repeat(2,1fr);}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+@media(max-width:520px){.grid-3,.grid-4{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:.8rem;font-weight:700;color:#444;}
+.req{color:var(--rm);margin-left:2px;}
+.field input,.field textarea{border:1.5px solid #DDD;border-radius:8px;padding:9px 12px;font-size:.9rem;font-family:inherit;outline:none;color:var(--tx);background:#FAFAFA;transition:border .15s;}
+.field input:focus,.field textarea:focus{border-color:var(--rm);background:#fff;box-shadow:0 0 0 3px rgba(183,28,28,.07);}
+.field textarea{resize:none;height:62px;}
+
+/* EDIT MODE ROWS */
+.edit-row{display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid #F5F5F5;}
+.edit-row:last-child{border-bottom:none;}
+.edit-row .handle{cursor:grab;color:#CCC;font-size:1rem;padding:0 4px;}
+.edit-row .edit-inp{flex:1;border:1.5px solid #DDD;border-radius:6px;padding:6px 10px;font-size:.82rem;font-family:inherit;outline:none;}
+.edit-row .edit-inp:focus{border-color:var(--rm);}
+.edit-row .req-toggle{font-size:.7rem;background:#EEE;border:none;border-radius:5px;padding:4px 7px;cursor:pointer;font-family:inherit;color:#555;}
+.edit-row .req-toggle.on{background:var(--rp);color:var(--rm);font-weight:700;}
+.edit-row .del-btn{color:#EF5350;background:none;border:none;font-size:1rem;cursor:pointer;padding:0 4px;line-height:1;}
+.add-field-row{display:flex;gap:8px;margin-top:10px;}
+.add-field-inp{flex:1;border:1.5px dashed #DDD;border-radius:8px;padding:8px 12px;font-size:.82rem;font-family:inherit;outline:none;}
+.add-field-inp:focus{border-color:var(--rm);}
+.btn-add-field{background:var(--rp);border:1.5px solid var(--rl);color:var(--rm);border-radius:7px;padding:8px 12px;cursor:pointer;font-size:.78rem;font-family:inherit;font-weight:700;}
+.edit-banner{background:var(--yl);border-radius:8px;padding:8px 13px;font-size:.78rem;color:var(--od);font-weight:700;margin-bottom:10px;display:none;}
+.edit-banner.show{display:block;}
+
+/* NET BOX */
+.computed{background:linear-gradient(135deg,#1B3A1E,var(--gd));color:#fff;border-radius:12px;padding:14px 18px;margin-top:12px;}
+.computed .lbl{font-size:.75rem;opacity:.8;}
+.computed .val{font-size:1.8rem;font-weight:800;margin:4px 0 2px;}
+.computed .sub-lbl{font-size:.72rem;opacity:.7;}
+
+/* INVENTORY (STOCK) */
+.inv-toolbar{margin-bottom:10px;}
+.legend-row{display:flex;gap:12px;flex-wrap:wrap;}
+.legend-txt{font-size:.73rem;color:#777;display:flex;align-items:center;gap:4px;}
+.legend-dot{width:11px;height:11px;border-radius:50%;display:inline-block;}
+.cat-block{margin-bottom:14px;}
+.cat-lbl{font-size:.78rem;font-weight:800;color:var(--rd);margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;}
+.cat-lbl-edit{display:flex;align-items:center;gap:6px;}
+.cat-name-inp{border:1.5px solid #DDD;border-radius:6px;padding:4px 9px;font-size:.78rem;font-family:inherit;outline:none;width:130px;}
+.cat-name-inp:focus{border-color:var(--rm);}
+.btn-del-cat{background:none;border:none;color:#EF5350;cursor:pointer;font-size:.85rem;}
+.chips{display:flex;flex-wrap:wrap;gap:7px;}
+.chip{padding:6px 13px;border-radius:20px;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;user-select:none;border:1.5px solid #E0E0E0;background:#F5F5F5;color:#555;}
+.chip:hover{transform:scale(1.05);}
+.chip.low{background:var(--yl);border-color:var(--yd);color:var(--od);}
+.chip.out{background:var(--rl);border-color:#EF9A9A;color:var(--rm);}
+.chip-low-group{display:inline-flex;flex-direction:column;align-items:flex-start;gap:3px;vertical-align:top;}
+.chip-note-inp{border:1.5px solid var(--yd);border-radius:8px;padding:4px 8px;font-size:.72rem;font-family:inherit;outline:none;background:#FFFDE7;color:var(--od);width:120px;min-width:80px;}
+.chip-note-inp:focus{border-color:var(--od);background:#fff;}
+.chip-note-inp::placeholder{color:#BCA86A;font-size:.68rem;}
+.chip-edit{padding:5px 11px;border-radius:20px;font-size:.75rem;font-weight:600;border:1.5px dashed #CCC;background:#FAFAFA;color:#666;display:flex;align-items:center;gap:4px;}
+.chip-edit input{border:none;outline:none;width:80px;font-family:inherit;font-size:.75rem;background:transparent;}
+.btn-del-chip{background:none;border:none;color:#EF5350;cursor:pointer;font-size:.8rem;line-height:1;padding:0 2px;}
+.btn-add-chip{background:var(--rp);border:1.5px dashed var(--rl);color:var(--rm);border-radius:20px;padding:5px 12px;font-size:.75rem;cursor:pointer;font-family:inherit;font-weight:700;}
+.quick-add-row{display:none;gap:8px;margin-bottom:10px;}
+.quick-add-row.show{display:flex;}
+.quick-add-row input{flex:1;border:1.5px solid #DDD;border-radius:8px;padding:8px 12px;font-size:.82rem;font-family:inherit;outline:none;}
+.quick-add-row input:focus{border-color:var(--rm);}
+.btn-quick{background:var(--rp);border:1.5px solid var(--rl);color:var(--rm);border-radius:7px;padding:8px 12px;cursor:pointer;font-size:.78rem;font-family:inherit;font-weight:700;}
+.add-cat-row{display:none;gap:8px;margin-top:12px;}
+.add-cat-row.show{display:flex;}
+.add-cat-inp{flex:1;border:1.5px dashed var(--rl);border-radius:8px;padding:8px 12px;font-size:.82rem;font-family:inherit;outline:none;}
+.add-cat-inp:focus{border-color:var(--rm);}
+.btn-add-cat{background:var(--rp);border:1.5px solid var(--rl);color:var(--rm);border-radius:7px;padding:8px 12px;cursor:pointer;font-size:.78rem;font-family:inherit;font-weight:700;}
+.btn-edit-mode{background:var(--rp);border:1.5px solid var(--rl);color:var(--rm);border-radius:7px;padding:5px 11px;cursor:pointer;font-size:.75rem;font-family:inherit;font-weight:700;}
+.btn-edit-mode.active{background:var(--gl);border-color:#A5D6A7;color:var(--gd);}
+
+/* SAVE BTN */
+.btn-save{background:linear-gradient(135deg,#4A0000,#7F0000);color:#fff;border:none;border-radius:12px;padding:16px 0;font-size:1.05rem;font-weight:800;cursor:pointer;font-family:inherit;width:100%;box-shadow:0 4px 14px rgba(127,0,0,.4);letter-spacing:.3px;transition:all .15s;}
+.btn-save:hover{opacity:.92;}
+.btn-save:active{transform:scale(.98);}
+.btn-save:disabled{background:#BDBDBD;box-shadow:none;cursor:not-allowed;}
+
+/* RECORDS */
+.stats-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.stat-p{background:var(--rp);border-radius:8px;padding:7px 12px;font-size:.78rem;color:var(--rm);font-weight:700;}
+.sync-bar{display:flex;align-items:center;justify-content:space-between;background:#F5F5F5;border-radius:8px;padding:8px 12px;margin-bottom:10px;gap:10px;flex-wrap:wrap;}
+#sync_txt{font-size:.78rem;color:var(--mu);}
+.btn-sync-all{background:var(--bl);border:1.5px solid #90CAF9;color:var(--bd);border-radius:7px;padding:6px 13px;cursor:pointer;font-size:.75rem;font-family:inherit;font-weight:700;}
+.rec-wrap{overflow-x:auto;}
+.rec-wrap table{border-collapse:collapse;width:100%;min-width:600px;font-size:.75rem;}
+.rec-wrap th{background:var(--rm);color:#fff;padding:7px 10px;text-align:center;white-space:nowrap;}
+.rec-wrap td{padding:6px 10px;border-bottom:1px solid #F0F0F0;text-align:center;white-space:nowrap;}
+.rec-wrap tr:nth-child(even) td{background:#FFF5F5;}
+.net-td{font-weight:800;color:var(--gd);}
+.btn-resend{background:var(--bl);border:1px solid #90CAF9;color:var(--bd);border-radius:5px;padding:3px 8px;cursor:pointer;font-size:.7rem;font-family:inherit;}
+.status-ok{color:var(--gd);font-weight:700;}
+.status-pend{color:var(--yd);font-weight:700;}
+.export-box{margin-top:12px;}
+.export-box textarea{width:100%;height:80px;font-size:.72rem;font-family:monospace;border:1.5px solid #DDD;border-radius:8px;padding:8px;resize:none;outline:none;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#323232;color:#fff;padding:10px 24px;border-radius:24px;font-size:.85rem;opacity:0;transition:all .3s;pointer-events:none;z-index:9999;white-space:nowrap;}
+.toast.show{opacity:1;}
+.toast.ok{background:var(--gd);}
+.toast.er{background:var(--rm);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-left">
+    <h1>🍲 สุกี้ภัสสร</h1>
+    <p id="hdr_sub">บันทึกยอดขายประจำวัน</p>
+  </div>
+  <div class="hdr-right">
+    <div class="hdr-badge">
+      <div class="lbl">ยอดสุทธิ</div>
+      <div class="val" id="hdr_net">฿0</div>
+    </div>
+    <button class="btn-hdr" id="btn_setup" onclick="openSetup()">⚙️ ตั้งค่า</button>
+  </div>
+</div>
+
+<!-- SETUP MODAL -->
+<div class="modal-overlay" id="setup_modal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h2>⚙️ ตั้งค่าระบบส่งข้อมูล</h2>
+      <button class="btn-close" onclick="closeSetup()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-url-section">
+        <div class="modal-url-label">🔗 วาง Make.com Webhook URL ที่นี่</div>
+        <div class="url-row">
+          <input type="text" id="script_url" placeholder="https://hook.eu1.make.com/xxxxxxxxxx">
+          <button class="btn-test" onclick="testConn()">🔌 ทดสอบ</button>
+          <button class="btn-save-url" onclick="saveUrl()">💾 บันทึก</button>
+        </div>
+        <div class="conn-status" id="conn_status"></div>
+      </div>
+      <div class="modal-rec-label">👤 ชื่อผู้บันทึกเริ่มต้น</div>
+      <div class="modal-rec-row">
+        <input type="text" id="rec_name_inp" placeholder="เช่น แม่ค้า, น้องเมย์">
+        <button class="btn-save-rec" onclick="saveRecName()">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ข้อมูลพื้นฐาน -->
+<div class="card">
+  <div class="card-title">
+    <div class="card-title-l">📅 ข้อมูลพื้นฐาน</div>
+    <button class="btn-section-edit" id="btn_edit_basic" onclick="toggleEdit('basic')">✏️ แก้ไขรายการ</button>
+  </div>
+  <div class="edit-banner" id="banner_basic">✏️ โหมดแก้ไข — เพิ่ม/ลบ/แก้ชื่อ · กด "เสร็จแล้ว" เมื่อเสร็จ</div>
+  <div id="sec_basic"></div>
+</div>
+
+<!-- ยอดขาย -->
+<div class="card">
+  <div class="card-title">
+    <div class="card-title-l">💰 ยอดขาย</div>
+    <button class="btn-section-edit" id="btn_edit_sale" onclick="toggleEdit('sale')">✏️ แก้ไขรายการ</button>
+  </div>
+  <div class="edit-banner" id="banner_sale">✏️ โหมดแก้ไข — เพิ่ม/ลบ/แก้ชื่อ · กด "เสร็จแล้ว" เมื่อเสร็จ</div>
+  <div id="sec_sale"></div>
+</div>
+
+<!-- ค่าใช้จ่าย -->
+<div class="card">
+  <div class="card-title">
+    <div class="card-title-l">🧾 ค่าใช้จ่าย</div>
+    <button class="btn-section-edit" id="btn_edit_cost" onclick="toggleEdit('cost')">✏️ แก้ไขรายการ</button>
+  </div>
+  <div class="edit-banner" id="banner_cost">✏️ โหมดแก้ไข — เพิ่ม/ลบ/แก้ชื่อ · กด "เสร็จแล้ว" เมื่อเสร็จ</div>
+  <div id="sec_cost"></div>
+  <div class="field" style="margin-top:10px;">
+    <label style="font-size:.8rem;font-weight:700;color:var(--rd);">รายละเอียดค่าใช้จ่าย <span style="font-weight:400;color:#aaa;font-size:.7rem;">(ไม่บังคับ)</span></label>
+    <input type="text" id="f_cost_detail" placeholder="เช่น ค่าถุง 50 บ., น้ำแข็ง 40 บ.">
+  </div>
+  <div class="computed" id="net_box">
+    <div class="lbl">ยอดสุทธิ = เงินสด − เงินทอน − ค่าใช้จ่ายทั้งหมด</div>
+    <div class="val" id="net_display">฿ 0</div>
+    <div class="sub-lbl" id="net_formula"></div>
+  </div>
+</div>
+
+<!-- สต็อกวัตถุดิบ -->
+<div class="card">
+  <div class="card-title">
+    <div class="card-title-l">📦 สต็อกวัตถุดิบ</div>
+    <button class="btn-edit-mode" id="btn_edit_mode" onclick="toggleStockEdit()">✏️ แก้ไขรายการ</button>
+  </div>
+  <div class="inv-toolbar" id="inv_legend">
+    <div class="legend-row">
+      <span class="legend-txt"><span class="legend-dot" style="background:#BDBDBD;border:2px solid #9E9E9E;"></span>ปกติ</span>
+      <span class="legend-txt"><span class="legend-dot" style="background:var(--yd);"></span>เหลือน้อย (1×)</span>
+      <span class="legend-txt"><span class="legend-dot" style="background:var(--rd);"></span>หมด (2×)</span>
+      <span class="legend-txt" style="font-size:.7rem;color:#BDBDBD;">3× = กลับปกติ</span>
+    </div>
+  </div>
+  <div class="edit-banner" id="edit_banner">✏️ โหมดแก้ไข — เพิ่ม/ลบ/แก้ชื่อรายการ · กด "เสร็จแล้ว" เมื่อเสร็จ</div>
+  <div class="quick-add-row" id="quick_add_row">
+    <input type="text" id="quick_inp" placeholder="＋ เพิ่มรายการด่วน กด Enter" onkeydown="if(event.key==='Enter')quickAdd()">
+    <button class="btn-quick" onclick="quickAdd()">＋ เพิ่ม</button>
+  </div>
+  <div id="inv_container" style="margin-top:12px;"></div>
+  <div class="add-cat-row" id="add_cat_row">
+    <input class="add-cat-inp" type="text" id="new_cat_inp" placeholder="ชื่อหมวดหมู่ใหม่...">
+    <button class="btn-add-cat" onclick="addCategory()">＋ เพิ่มหมวด</button>
+  </div>
+</div>
+
+<!-- หมายเหตุ -->
+<div class="card">
+  <div class="card-title"><div class="card-title-l">📝 หมายเหตุ</div></div>
+  <textarea id="f_note" rows="2" placeholder="ข้อมูลเพิ่มเติม เช่น ปัญหาวันนี้, ลูกค้า VIP..."></textarea>
+</div>
+
+<!-- SAVE -->
+<button class="btn-save" id="save_btn" onclick="saveRecord()">💾 บันทึก + ส่ง LINE &amp; Sheets</button>
+
+<!-- RECORDS -->
+<div class="card" id="records_section" style="display:none;">
+  <div class="card-title">
+    <div class="card-title-l">📋 ประวัติการบันทึก <span id="rec_count" style="font-size:.8rem;font-weight:400;color:var(--mu);"></span></div>
+  </div>
+  <div class="stats-row" id="summary_stats"></div>
+  <div class="sync-bar" id="sync_bar">
+    <span id="sync_txt">—</span>
+    <button class="btn-sync-all" id="btn_sync_all" onclick="syncAll()">📤 ส่งทั้งหมดอีกครั้ง</button>
+  </div>
+  <div class="rec-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>วันที่</th><th>ผู้บันทึก</th><th>เงินสด</th><th>เงินทอน</th>
+          <th>เสิร์ฟ</th><th>ค่าน้ำ</th><th>น้ำแข็ง</th><th>ค่าอื่น</th>
+          <th>สุทธิ ฿</th><th>ของหมด</th><th>ของน้อย</th><th>หมายเหตุ</th><th>ส่ง</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="records_body"></tbody>
+    </table>
+  </div>
+  <div style="margin-top:12px;display:flex;gap:9px;flex-wrap:wrap;">
+    <button onclick="showTSV()" style="background:var(--bl);border:1.5px solid #90CAF9;color:var(--bd);border-radius:7px;padding:7px 14px;cursor:pointer;font-size:.8rem;font-family:inherit;font-weight:700;">📋 Copy ข้อมูล (สำรอง)</button>
+    <button onclick="clearAll()" style="background:var(--rl);border:1.5px solid #EF9A9A;color:var(--rd);border-radius:7px;padding:7px 14px;cursor:pointer;font-size:.8rem;font-family:inherit;font-weight:700;">🗑️ ลบทั้งหมด</button>
+  </div>
+  <div class="export-box" id="export_box" style="display:none;">
+    <strong style="font-size:.8rem;">วางใน Google Sheets:</strong>
+    <textarea id="csv_out" readonly onclick="this.select()"></textarea>
+    <button onclick="copyTSV()" style="background:var(--bl);border:1.5px solid #90CAF9;color:var(--bd);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:.78rem;font-family:inherit;font-weight:700;margin-top:6px;">📋 คัดลอก</button>
+  </div>
+</div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  DEFAULT CONFIGS
+// ══════════════════════════════════════════
+const DEFAULT_BASIC = [
+  {id:'fd_date',     key:'date',     label:'วันที่',        type:'date',   req:true,  fixed:true},
+  {id:'fd_recorder', key:'recorder', label:'ผู้บันทึก',     type:'text',   req:false, fixed:false, ph:'ชื่อ...'}
+];
+const DEFAULT_SALE = [
+  {id:'fs_cash',    key:'cashIn',  label:'เงินสด',            type:'number', req:true,  fixed:true,  ph:'0', role:'plus'},
+  {id:'fs_float',   key:'float',   label:'เงินทอนเริ่มต้น',   type:'number', req:false, fixed:true,  ph:'0', role:'minus'},
+  {id:'fs_orders',  key:'orders',  label:'จำนวนเสิร์ฟ',       type:'number', req:false, fixed:false, ph:'0', role:'none'}
+];
+const DEFAULT_COST = [
+  {id:'fc_water', key:'water',    label:'ค่าน้ำ',          ph:'0', fixed:false},
+  {id:'fc_ice',   key:'ice',      label:'น้ำแข็ง',         ph:'0', fixed:false},
+  {id:'fc_other', key:'otherCost',label:'ค่าใช้จ่ายอื่น',  ph:'0', fixed:false}
+];
+const DEFAULT_CATALOG = [
+  {cat:"🥩 เนื้อสัตว์ / ทะเล",  items:["หมูสด","หมูสุก","กุ้งสด","กุ้งสุก","หมึกวง","ปลาหมึกรอบ","ไข่"]},
+  {cat:"🥬 ผัก / เส้น",         items:["ผักกาดขาว","ชื่นฉาย","วุ้นเส้น","บะหมี่หยก","เส้นมัน"]},
+  {cat:"🫕 ซอส / เครื่องปรุง",  items:["น้ำจิ้มสุกี้กวางตุ้ง","น้ำจิ้มสุกี้เต้าหู้ยี้","ซุปฟ้าไทย","หม่าลาฟ้าไทย","ผงหม่าล่า","น้ำมัน"]},
+  {cat:"📦 บรรจุภัณฑ์",         items:["ถุงหิ้ว 7x15","กล่องน้ำกลับบ้าน","กล่องกระดาษคราฟ","ถ้วยหานนี","ช้อน","ส้อม","ตะเกียบ","ถ้วยน้ำจิ้มกลับบ้าน","ถ้วยน้ำจิ้มหานนี"]},
+  {cat:"🔧 อุปกรณ์อื่นๆ",       items:["น้ำถัง","แก๊สหุงต้ม","ใบอดเดอร์","ถุงดำ","ถุงเย็น 10x15"]}
+];
+
+// ── State ──
+let basicFields = loadLS('sukki_basic', DEFAULT_BASIC);
+let saleFields  = loadLS('sukki_sale',  DEFAULT_SALE);
+let costFields  = loadLS('sukki_cost',  DEFAULT_COST);
+let catalog     = loadLS('sukki_catalog', DEFAULT_CATALOG);
+let records     = loadLS('sukki_v2', []);
+let invState    = {};
+let invNotes    = {};
+let stockEdit   = false;
+let secEdit     = {basic:false, sale:false, cost:false};
+let hookUrl     = (()=>{ const v=localStorage.getItem('sukki_hook')||''; try{ return JSON.parse(v)||''; }catch(e){ return v; } })();
+let fldCnt      = parseInt(localStorage.getItem('sukki_fld_cnt') || '20');
+
+function loadLS(key, def){ return JSON.parse(localStorage.getItem(key) || 'null') || deepCopy(def); }
+function saveLS(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+function deepCopy(o){ return JSON.parse(JSON.stringify(o)); }
+function nextId(){ fldCnt++; saveLS('sukki_fld_cnt', fldCnt); return 'fx_'+fldCnt; }
+function fmt(n){ return Number(n).toLocaleString('th-TH'); }
+function todayISO(){ return new Date().toISOString().split('T')[0]; }
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(iso){ if(!iso) return '-'; const [y,m,d]=iso.split('-'); return d+'/'+m+'/'+String(+y+543).slice(-2); }
+
+// ══════════════════════════════════════════
+//  SETUP MODAL
+// ══════════════════════════════════════════
+function openSetup(){
+  document.getElementById('setup_modal').classList.add('show');
+  if(hookUrl) document.getElementById('script_url').value = hookUrl;
+  const rn = localStorage.getItem('sukki_recorder') || '';
+  if(rn) document.getElementById('rec_name_inp').value = rn;
+}
+function closeSetup(){ document.getElementById('setup_modal').classList.remove('show'); }
+document.getElementById('setup_modal').addEventListener('click', e => {
+  if(e.target === document.getElementById('setup_modal')) closeSetup();
+});
+function saveUrl(){
+  const v = document.getElementById('script_url').value.trim();
+  if(!v){ showToast('กรุณาใส่ URL','er'); return; }
+  hookUrl = v; localStorage.setItem('sukki_hook', v); updateHdrBtn();
+  showToast('✅ บันทึก URL สำเร็จ'); closeSetup();
+}
+function saveRecName(){
+  const v = document.getElementById('rec_name_inp').value.trim();
+  if(!v){ showToast('กรุณาใส่ชื่อ','er'); return; }
+  localStorage.setItem('sukki_recorder', v);
+  // fill recorder field
+  const rinp = document.getElementById('inp_fd_recorder');
+  if(rinp && !rinp.value) rinp.value = v;
+  showToast('✅ บันทึกชื่อแล้ว');
+}
+async function testConn(){
+  const url = document.getElementById('script_url').value.trim();
+  if(!url){ showToast('ใส่ URL ก่อน','er'); return; }
+  const st = document.getElementById('conn_status');
+  st.innerHTML = '<span style="color:var(--yd)">⏳ กำลังทดสอบ...</span>';
+  try{
+    await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({test:true,shop:'สุกี้ภัสสร'})});
+    st.innerHTML = '<span style="color:var(--gd);font-weight:700;">✅ ส่งได้! ตรวจสอบใน Make.com</span>';
+  }catch(e){ st.innerHTML = '<span style="color:var(--rd);font-weight:700;">❌ '+e.message+'</span>'; }
+}
+function updateHdrBtn(){
+  const b = document.getElementById('btn_setup');
+  b.textContent = hookUrl ? '✅ เชื่อมต่อแล้ว' : '⚙️ ตั้งค่า';
+  b.className = 'btn-hdr' + (hookUrl ? ' on' : '');
+  document.getElementById('hdr_sub').textContent = hookUrl ? 'เชื่อมต่อ LINE & Google Sheets แล้ว' : 'บันทึกยอดขายประจำวัน';
+}
+
+// ══════════════════════════════════════════
+//  BUILD SECTIONS
+// ══════════════════════════════════════════
+function makeGrid(n){
+  const g = document.createElement('div');
+  g.className = 'grid ' + (n>=4?'grid-4':n>=3?'grid-3':n>=2?'grid-2':'');
+  return g;
+}
+
+function buildNormalBasic(){
+  const c = document.getElementById('sec_basic'); c.innerHTML='';
+  const wrap = makeGrid(basicFields.length);
+  basicFields.forEach(f => {
+    const div = document.createElement('div'); div.className='field';
+    const lbl = document.createElement('label');
+    lbl.innerHTML = escHtml(f.label) + (f.req ? '<span class="req">*</span>' : '');
+    const inp = document.createElement('input');
+    inp.type = f.type||'text'; inp.id = 'inp_'+f.id; inp.placeholder = f.ph||'';
+    inp.addEventListener('input', calcNet);
+    div.appendChild(lbl); div.appendChild(inp); wrap.appendChild(div);
+  });
+  c.appendChild(wrap);
+  // prefill date
+  const di = document.getElementById('inp_fd_date');
+  if(di && !di.value) di.value = todayISO();
+  // prefill recorder
+  const ri = document.getElementById('inp_fd_recorder');
+  const rn = localStorage.getItem('sukki_recorder');
+  if(ri && rn && !ri.value) ri.value = rn;
+}
+
+function buildNormalSale(){
+  const c = document.getElementById('sec_sale'); c.innerHTML='';
+  const wrap = makeGrid(saleFields.length);
+  saleFields.forEach(f => {
+    const div = document.createElement('div'); div.className='field';
+    const lbl = document.createElement('label');
+    let roleIcon = f.role==='plus'?' 💚':f.role==='minus'?' 🔴':'';
+    lbl.innerHTML = escHtml(f.label) + roleIcon + (f.req ? '<span class="req">*</span>' : '');
+    const inp = document.createElement('input');
+    inp.type = 'number'; inp.id = 'inp_'+f.id; inp.min='0'; inp.placeholder = f.ph||'0';
+    inp.addEventListener('input', calcNet);
+    div.appendChild(lbl); div.appendChild(inp); wrap.appendChild(div);
+  });
+  c.appendChild(wrap);
+}
+
+function buildNormalCost(){
+  const c = document.getElementById('sec_cost'); c.innerHTML='';
+  const wrap = makeGrid(costFields.length);
+  costFields.forEach(f => {
+    const div = document.createElement('div'); div.className='field';
+    const lbl = document.createElement('label'); lbl.textContent = f.label;
+    const inp = document.createElement('input');
+    inp.type='number'; inp.id='inp_'+f.id; inp.min='0'; inp.placeholder=f.ph||'0';
+    inp.addEventListener('input', calcNet);
+    div.appendChild(lbl); div.appendChild(inp); wrap.appendChild(div);
+  });
+  c.appendChild(wrap);
+}
+
+// ══════════════════════════════════════════
+//  EDIT SECTIONS
+// ══════════════════════════════════════════
+function toggleEdit(sec){
+  secEdit[sec] = !secEdit[sec];
+  const btn = document.getElementById('btn_edit_'+sec);
+  const banner = document.getElementById('banner_'+sec);
+  btn.textContent = secEdit[sec] ? '✅ เสร็จแล้ว' : '✏️ แก้ไขรายการ';
+  btn.classList.toggle('active', secEdit[sec]);
+  banner.classList.toggle('show', secEdit[sec]);
+  if(secEdit[sec]) buildEditSection(sec);
+  else { saveSection(sec); buildSection(sec); }
+}
+
+function buildSection(sec){
+  if(sec==='basic') buildNormalBasic();
+  else if(sec==='sale') buildNormalSale();
+  else if(sec==='cost') buildNormalCost();
+}
+
+function saveSection(sec){
+  const flds = sec==='basic'?basicFields:sec==='sale'?saleFields:costFields;
+  const rows = document.querySelectorAll('#sec_'+sec+' .edit-row');
+  rows.forEach((row,i) => {
+    const inp = row.querySelector('.edit-inp');
+    if(inp && flds[i]) flds[i].label = inp.value || flds[i].label;
+    if(sec==='sale'){
+      const rt = row.querySelector('.req-toggle');
+      if(rt && flds[i]) flds[i].req = rt.classList.contains('on');
+    }
+  });
+  saveLS('sukki_'+sec, flds);
+}
+
+function buildEditSection(sec){
+  const c = document.getElementById('sec_'+sec); c.innerHTML='';
+  const flds = sec==='basic'?basicFields:sec==='sale'?saleFields:costFields;
+  flds.forEach((f,i) => {
+    const row = document.createElement('div'); row.className='edit-row';
+    row.innerHTML = '<span class="handle">⠿</span>';
+    const inp = document.createElement('input'); inp.className='edit-inp'; inp.value=f.label;
+    row.appendChild(inp);
+    if(sec==='sale'){
+      const rt = document.createElement('button');
+      rt.className='req-toggle'+(f.req?' on':'');
+      rt.textContent=f.req?'*จำเป็น':'ไม่บังคับ';
+      rt.onclick=()=>{ rt.classList.toggle('on'); rt.textContent=rt.classList.contains('on')?'*จำเป็น':'ไม่บังคับ'; };
+      row.appendChild(rt);
+    }
+    if(!f.fixed){
+      const db = document.createElement('button'); db.className='del-btn'; db.textContent='✕';
+      db.onclick=()=>{ flds.splice(i,1); saveLS('sukki_'+sec, flds); buildEditSection(sec); };
+      row.appendChild(db);
+    }
+    c.appendChild(row);
+  });
+  // Add new field row
+  const ar = document.createElement('div'); ar.className='add-field-row';
+  const ai = document.createElement('input'); ai.className='add-field-inp'; ai.placeholder='ชื่อรายการใหม่...';
+  const ab = document.createElement('button'); ab.className='btn-add-field'; ab.textContent='＋ เพิ่ม';
+  ab.onclick=()=>{
+    const v=ai.value.trim(); if(!v) return;
+    const nf = {id:nextId(), key:v.replace(/\s/g,'_'), label:v, type:'number', req:false, fixed:false, ph:'0'};
+    if(sec==='sale') nf.role='none';
+    flds.push(nf); saveLS('sukki_'+sec, flds); ai.value=''; buildEditSection(sec);
+  };
+  ar.appendChild(ai); ar.appendChild(ab); c.appendChild(ar);
+}
+
+// ══════════════════════════════════════════
+//  CALC NET
+// ══════════════════════════════════════════
+function calcNet(){
+  let plus=0, minus=0, costs=0;
+  saleFields.forEach(f => {
+    const v=parseFloat(document.getElementById('inp_'+f.id)?.value)||0;
+    if(f.role==='plus') plus+=v;
+    else if(f.role==='minus') minus+=v;
+  });
+  costFields.forEach(f => {
+    costs += parseFloat(document.getElementById('inp_'+f.id)?.value)||0;
+  });
+  const net = plus - minus - costs;
+  document.getElementById('net_display').textContent = '฿ '+fmt(net);
+  document.getElementById('hdr_net').textContent = '฿'+fmt(net);
+  const fmla = [];
+  if(plus) fmla.push('+'+fmt(plus));
+  if(minus) fmla.push('−เงินทอน '+fmt(minus));
+  if(costs) fmla.push('−ค่าใช้จ่าย '+fmt(costs));
+  document.getElementById('net_formula').textContent = fmla.join(' ');
+  return net;
+}
+
+// ══════════════════════════════════════════
+//  INVENTORY / STOCK
+// ══════════════════════════════════════════
+function renderInv(){
+  const c = document.getElementById('inv_container'); c.innerHTML='';
+  catalog.forEach((cat, ci) => {
+    const block = document.createElement('div'); block.className='cat-block';
+    if(!stockEdit){
+      const lbl = document.createElement('div'); lbl.className='cat-lbl'; lbl.textContent=cat.cat;
+      block.appendChild(lbl);
+      const chips = document.createElement('div'); chips.className='chips';
+      cat.items.forEach((item, ii) => {
+        const key = ci+'_'+ii;
+        const state = (invState[key])||0;
+        if(state===1){
+          // LOW STOCK — chip + note input
+          const grp = document.createElement('div'); grp.className='chip-low-group';
+          const chip = document.createElement('span');
+          chip.className='chip low';
+          chip.textContent=item;
+          chip.onclick=()=>{ invState[key]=2; delete invNotes[key]; renderInv(); };
+          chip.title='กดอีกครั้ง = หมด';
+          grp.appendChild(chip);
+          const noteInp = document.createElement('input');
+          noteInp.className='chip-note-inp';
+          noteInp.type='text';
+          noteInp.placeholder='จำนวน / หมายเหตุ';
+          noteInp.value = invNotes[key]||'';
+          noteInp.onclick = e=>e.stopPropagation();
+          noteInp.oninput = e=>{ invNotes[key]=e.target.value; };
+          grp.appendChild(noteInp);
+          chips.appendChild(grp);
+        } else {
+          const chip = document.createElement('span');
+          chip.className='chip'+(state===2?' out':'');
+          chip.textContent=item;
+          chip.onclick=()=>{ invState[key]=((state+1)%3); if(state!==0) delete invNotes[key]; renderInv(); };
+          chip.title = state===0?'กด 1× = เหลือน้อย':'กด 3× = กลับปกติ';
+          chips.appendChild(chip);
+        }
+      });
+      block.appendChild(chips);
+    } else {
+      // Edit mode
+      const lbl = document.createElement('div'); lbl.className='cat-lbl';
+      const catEdit = document.createElement('div'); catEdit.className='cat-lbl-edit';
+      const catInp = document.createElement('input'); catInp.className='cat-name-inp'; catInp.value=cat.cat;
+      catInp.onblur=()=>{ catalog[ci].cat=catInp.value; saveLS('sukki_catalog',catalog); };
+      catEdit.appendChild(catInp);
+      const delCat = document.createElement('button'); delCat.className='btn-del-cat'; delCat.textContent='🗑️';
+      delCat.onclick=()=>{ catalog.splice(ci,1); saveLS('sukki_catalog',catalog); renderInv(); };
+      catEdit.appendChild(delCat);
+      lbl.appendChild(catEdit); block.appendChild(lbl);
+      const chips = document.createElement('div'); chips.className='chips';
+      cat.items.forEach((item, ii) => {
+        const ce = document.createElement('span'); ce.className='chip-edit';
+        const inp = document.createElement('input'); inp.value=item;
+        inp.onblur=()=>{ catalog[ci].items[ii]=inp.value; saveLS('sukki_catalog',catalog); };
+        const db = document.createElement('button'); db.className='btn-del-chip'; db.textContent='✕';
+        db.onclick=()=>{ catalog[ci].items.splice(ii,1); saveLS('sukki_catalog',catalog); renderInv(); };
+        ce.appendChild(inp); ce.appendChild(db); chips.appendChild(ce);
+      });
+      const addChip = document.createElement('button'); addChip.className='btn-add-chip'; addChip.textContent='＋ เพิ่ม';
+      addChip.onclick=()=>{ catalog[ci].items.push('ใหม่'); saveLS('sukki_catalog',catalog); renderInv(); };
+      chips.appendChild(addChip); block.appendChild(chips);
+    }
+    c.appendChild(block);
+  });
+}
+
+function toggleStockEdit(){
+  stockEdit = !stockEdit;
+  const btn = document.getElementById('btn_edit_mode');
+  const ban = document.getElementById('edit_banner');
+  const qa  = document.getElementById('quick_add_row');
+  const ac  = document.getElementById('add_cat_row');
+  btn.textContent = stockEdit ? '✅ เสร็จแล้ว' : '✏️ แก้ไขรายการ';
+  btn.classList.toggle('active', stockEdit);
+  ban.classList.toggle('show', stockEdit);
+  qa.classList.toggle('show', stockEdit);
+  ac.classList.toggle('show', stockEdit);
+  renderInv();
+}
+
+function quickAdd(){
+  const v = document.getElementById('quick_inp').value.trim(); if(!v) return;
+  if(!catalog.length) catalog.push({cat:'รายการทั่วไป',items:[]});
+  catalog[0].items.push(v); saveLS('sukki_catalog',catalog);
+  document.getElementById('quick_inp').value=''; renderInv();
+}
+
+function addCategory(){
+  const v = document.getElementById('new_cat_inp').value.trim(); if(!v) return;
+  catalog.push({cat:v,items:[]}); saveLS('sukki_catalog',catalog);
+  document.getElementById('new_cat_inp').value=''; renderInv();
+}
+
+function getStockSummary(){
+  const out=[], low=[];
+  catalog.forEach((cat,ci)=>{
+    cat.items.forEach((item,ii)=>{
+      const key=ci+'_'+ii;
+      const s=invState[key]||0;
+      if(s===2) out.push(item);
+      else if(s===1){
+        const note = invNotes[key]||'';
+        low.push(note ? item+'('+note+')' : item);
+      }
+    });
+  });
+  return { outOfStock:out.join(', '), lowStock:low.join(', ') };
+}
+
+// ══════════════════════════════════════════
+//  SAVE RECORD
+// ══════════════════════════════════════════
+async function saveRecord(){
+  const dateEl = document.getElementById('inp_fd_date');
+  if(!dateEl || !dateEl.value){ showToast('กรุณาเลือกวันที่','er'); return; }
+
+  const cashEl = saleFields.find(f=>f.key==='cashIn');
+  if(cashEl){
+    const v=parseFloat(document.getElementById('inp_'+cashEl.id)?.value)||0;
+    if(!v){ showToast('กรุณาใส่เงินสด','er'); return; }
+  }
+
+  const btn = document.getElementById('save_btn');
+  btn.disabled=true; btn.textContent='⏳ กำลังบันทึก...';
+
+  const dateISO = dateEl.value;
+  const dateObj = new Date(dateISO+'T00:00:00');
+  const dateDisp = fmtDate(dateISO);
+  const now = new Date();
+  const timestamp = now.toLocaleDateString('th-TH',{year:'numeric',month:'2-digit',day:'2-digit'})
+    +' '+now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+
+  // Collect all fields
+  const payload = { date:dateDisp, dateISO, timestamp };
+
+  basicFields.forEach(f=>{
+    const el=document.getElementById('inp_'+f.id);
+    if(el) payload[f.key] = f.type==='number'?(parseFloat(el.value)||0):el.value;
+  });
+  saleFields.forEach(f=>{
+    const el=document.getElementById('inp_'+f.id);
+    payload[f.key] = parseFloat(el?.value)||0;
+  });
+  costFields.forEach(f=>{
+    const el=document.getElementById('inp_'+f.id);
+    payload[f.key] = parseFloat(el?.value)||0;
+  });
+
+  payload.costDetails = document.getElementById('f_cost_detail').value.trim();
+  payload.note        = document.getElementById('f_note').value.trim();
+  payload.net         = calcNet();
+
+  const stock = getStockSummary();
+  payload.outOfStock = stock.outOfStock;
+  payload.lowStock   = stock.lowStock;
+
+  // Save to local
+  const rec = { ...payload, _id: Date.now(), _sent: false };
+  records.unshift(rec); saveLS('sukki_v2', records);
+
+  // Try send
+  let sent = false;
+  if(hookUrl){
+    try{
+      await fetch(hookUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+      records[0]._sent = true; saveLS('sukki_v2', records); sent=true;
+    }catch(e){ console.error(e); }
+  }
+
+  btn.disabled=false; btn.textContent='💾 บันทึก + ส่ง LINE & Sheets';
+  showToast(sent ? '✅ บันทึก + ส่งสำเร็จ!' : hookUrl ? '💾 บันทึกแล้ว (ส่งไม่สำเร็จ)' : '💾 บันทึกแล้ว (ยังไม่มี Webhook)', sent?'ok':'');
+  resetForm();
+  renderRecords();
+  invState = {}; invNotes = {}; renderInv();
+}
+
+// ══════════════════════════════════════════
+//  RESET FORM
+// ══════════════════════════════════════════
+function resetForm(){
+  [...saleFields, ...costFields].forEach(f=>{
+    const el=document.getElementById('inp_'+f.id); if(el) el.value='';
+  });
+  document.getElementById('f_cost_detail').value='';
+  document.getElementById('f_note').value='';
+  // Reset date to today
+  const di=document.getElementById('inp_fd_date'); if(di) di.value=todayISO();
+  // Keep recorder
+  calcNet();
+}
+
+// ══════════════════════════════════════════
+//  SYNC / RESEND
+// ══════════════════════════════════════════
+async function syncAll(){
+  if(!hookUrl){ showToast('ยังไม่มี Webhook URL','er'); return; }
+  const pending = records.filter(r=>!r._sent);
+  if(!pending.length){ showToast('ไม่มีรายการค้างส่ง'); return; }
+  let ok=0;
+  for(const r of pending){
+    try{
+      const {_id,_sent,...payload} = r;
+      await fetch(hookUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+      r._sent=true; ok++;
+    }catch(e){}
+  }
+  saveLS('sukki_v2',records); renderRecords();
+  showToast(ok+' รายการส่งสำเร็จ', ok?'ok':'');
+}
+
+async function resendRecord(id){
+  if(!hookUrl){ showToast('ยังไม่มี Webhook URL','er'); return; }
+  const rec=records.find(r=>r._id===id); if(!rec) return;
+  try{
+    const {_id,_sent,...payload}=rec;
+    await fetch(hookUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+    rec._sent=true; saveLS('sukki_v2',records); renderRecords();
+    showToast('✅ ส่งซ้ำสำเร็จ','ok');
+  }catch(e){ showToast('❌ ส่งไม่สำเร็จ','er'); }
+}
+
+function deleteRecord(id){
+  if(!confirm('ลบรายการนี้?')) return;
+  records=records.filter(r=>r._id!==id); saveLS('sukki_v2',records); renderRecords();
+}
+
+// ══════════════════════════════════════════
+//  RENDER RECORDS TABLE
+// ══════════════════════════════════════════
+function renderRecords(){
+  const sec = document.getElementById('records_section');
+  if(!records.length){ sec.style.display='none'; return; }
+  sec.style.display='';
+  document.getElementById('rec_count').textContent = '('+records.length+' รายการ)';
+
+  const pending = records.filter(r=>!r._sent).length;
+  document.getElementById('sync_txt').textContent = pending ? '⚠️ ค้างส่ง '+pending+' รายการ' : '✅ ส่งครบแล้ว';
+
+  // Stats
+  const total = records.reduce((s,r)=>s+(r.net||0),0);
+  const avg   = Math.round(total/records.length);
+  document.getElementById('summary_stats').innerHTML =
+    '<span class="stat-p">รวม '+records.length+' วัน</span>'+
+    '<span class="stat-p">ยอดรวม ฿'+fmt(total)+'</span>'+
+    '<span class="stat-p">เฉลี่ย/วัน ฿'+fmt(avg)+'</span>';
+
+  // Table
+  const tbody = document.getElementById('records_body'); tbody.innerHTML='';
+  records.forEach(r=>{
+    const tr = document.createElement('tr');
+    const getV = k => r[k]!==undefined ? r[k] : '-';
+    const cashIn   = getV('cashIn');
+    const floatV   = getV('float');
+    const orders   = getV('orders');
+    const water    = getV('water');
+    const ice      = getV('ice');
+    const otherV   = getV('otherCost');
+    tr.innerHTML =
+      '<td>'+escHtml(fmtDate(r.dateISO||r.date||'')+'</td>')+
+      '<td>'+escHtml(r.recorder||'-')+'</td>'+
+      '<td>'+fmt(cashIn)+'</td>'+
+      '<td>'+fmt(floatV)+'</td>'+
+      '<td>'+fmt(orders)+'</td>'+
+      '<td>'+fmt(water)+'</td>'+
+      '<td>'+fmt(ice)+'</td>'+
+      '<td>'+fmt(otherV)+'</td>'+
+      '<td class="net-td">฿'+fmt(r.net||0)+'</td>'+
+      '<td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;">'+escHtml(r.outOfStock||'-')+'</td>'+
+      '<td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;">'+escHtml(r.lowStock||'-')+'</td>'+
+      '<td style="max-width:90px;overflow:hidden;text-overflow:ellipsis;">'+escHtml(r.note||'-')+'</td>'+
+      '<td class="'+( r._sent ? 'status-ok' : 'status-pend')+'">'+( r._sent ? '✅' : '⏳')+'</td>'+
+      '<td style="display:flex;gap:4px;padding:4px;">'+
+        '<button class="btn-resend" onclick="resendRecord('+r._id+')">📤</button>'+
+        '<button class="btn-resend" style="background:var(--rl);border-color:#EF9A9A;color:var(--rd);" onclick="deleteRecord('+r._id+')">🗑️</button>'+
+      '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+// ══════════════════════════════════════════
+//  TSV EXPORT
+// ══════════════════════════════════════════
+function showTSV(){
+  const box = document.getElementById('export_box');
+  box.style.display = box.style.display==='none'?'':'none';
+  if(box.style.display==='none') return;
+  const rows = records.map(r=>[
+    fmtDate(r.dateISO||r.date||''),
+    r.recorder||'',
+    r.cashIn||0, r.float||0, r.orders||0,
+    r.water||0, r.ice||0, r.otherCost||0,
+    r.costDetails||'', r.net||0,
+    '', '=J{row}+K{row}',
+    r.outOfStock||'', r.lowStock||'',
+    r.note||'', r.timestamp||'',
+  ].join('\t')).join('\n');
+  const hdr = 'วันที่\tผู้บันทึก\tเงินสด\tเงินทอน\tเสิร์ฟ\tค่าน้ำ\tน้ำแข็ง\tค่าอื่น\tรายละเอียด\tยอดสุทธิ\tเงินโอน\tยอดสุทธิจริง\tของหมด\tของน้อย\tหมายเหตุ\tเวลา';
+  document.getElementById('csv_out').value = hdr+'\n'+rows;
+}
+function copyTSV(){
+  const t=document.getElementById('csv_out'); t.select();
+  document.execCommand('copy'); showToast('📋 คัดลอกแล้ว');
+}
+function clearAll(){
+  if(!confirm('ลบประวัติทั้งหมด ('+records.length+' รายการ)?')) return;
+  records=[]; saveLS('sukki_v2',[]);
+  renderRecords(); showToast('🗑️ ลบแล้ว');
+}
+
+// ══════════════════════════════════════════
+//  SYNC BAR (only show when has records)
+// ══════════════════════════════════════════
+function renderSyncBar(){
+  const pending=records.filter(r=>!r._sent).length;
+  const el=document.getElementById('sync_txt');
+  if(el) el.textContent = pending ? '⚠️ ค้างส่ง '+pending+' รายการ' : '✅ ส่งครบแล้ว';
+}
+
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+let toastT;
+function showToast(msg, type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show '+type;
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>{ t.className='toast'; }, 3000);
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+buildNormalBasic();
+buildNormalSale();
+buildNormalCost();
+renderInv();
+renderRecords();
+updateHdrBtn();
+calcNet();
+</script>
+</body>
+</html>

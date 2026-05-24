@@ -1,0 +1,2271 @@
+<!doctype html>
+<html lang="th" class="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>yy. — Sales Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+<style type="text/tailwindcss">
+  @custom-variant dark (&:where(.dark, .dark *));
+  @theme {
+    --font-sans: "Sarabun", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  :root{
+    --bg: #fafaf9;
+    --surface: #ffffff;
+    --surface-2: #f5f5f4;
+    --border: #e7e5e4;
+    --border-strong: #d6d3d1;
+    --text: #1c1917;
+    --text-2: #57534e;
+    --text-3: #a8a29e;
+    --accent: oklch(60% 0.16 245);
+    --accent-soft: oklch(95% 0.04 245);
+    --accent-ink: oklch(40% 0.18 245);
+    --pos: oklch(58% 0.15 155);
+    --neg: oklch(58% 0.20 25);
+    --warn: oklch(72% 0.16 70);
+    --shadow-card: 0 1px 0 0 rgba(0,0,0,.02), 0 1px 3px 0 rgba(0,0,0,.04);
+    --shadow-pop: 0 12px 32px -8px rgba(0,0,0,.16), 0 4px 12px -4px rgba(0,0,0,.06);
+  }
+  .dark{
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface-2: #181818;
+    --border: #232323;
+    --border-strong: #2e2e2e;
+    --text: #f5f5f4;
+    --text-2: #a8a29e;
+    --text-3: #57534e;
+    --accent: oklch(72% 0.15 245);
+    --accent-soft: oklch(28% 0.07 245);
+    --accent-ink: oklch(85% 0.10 245);
+    --shadow-card: 0 1px 0 0 rgba(255,255,255,.02), 0 1px 3px 0 rgba(0,0,0,.4);
+    --shadow-pop: 0 12px 32px -8px rgba(0,0,0,.6);
+  }
+  html,body{background:var(--bg);color:var(--text);}
+  body{font-family:'Sarabun',ui-sans-serif,system-ui,sans-serif;font-feature-settings:"ss01","cv11";}
+  /* Thai script doesn't have natural word boundaries — keep-all prevents mid-word breaks. */
+  h1, h2, h3, h4, .pkpi-eyebrow, .lbl, .nav-item { word-break: keep-all; }
+  .pill, .ic-chip { white-space: nowrap; word-break: keep-all; }
+  .num{font-variant-numeric:tabular-nums;letter-spacing:-.01em;}
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-card);}
+  .card-flat{background:var(--surface);border:1px solid var(--border);border-radius:14px;}
+  .hairline{border-color:var(--border);}
+  .hairline-strong{border-color:var(--border-strong);}
+  .muted{color:var(--text-2);}
+  .muted-2{color:var(--text-3);}
+  .surface-2{background:var(--surface-2);}
+  .accent{color:var(--accent);}
+  .bg-accent{background:var(--accent);}
+  .bg-accent-soft{background:var(--accent-soft);}
+  .text-accent-ink{color:var(--accent-ink);}
+  .ring-accent{box-shadow:0 0 0 3px color-mix(in oklch, var(--accent) 22%, transparent);}
+  .border-accent{border-color:var(--accent);}
+
+  /* Inputs */
+  .inp{
+    width:100%;padding:9px 12px;border:1px solid var(--border-strong);border-radius:10px;
+    background:var(--surface);color:var(--text);font:inherit;font-size:14px;outline:none;
+    transition:border-color .12s, box-shadow .12s, background .12s;
+  }
+  .inp::placeholder{color:var(--text-3);}
+  .inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);}
+  .inp[type="date"]{font-variant-numeric:tabular-nums;}
+  .lbl{font-size:12.5px;font-weight:600;color:var(--text-2);display:flex;align-items:center;gap:6px;}
+  .lbl .req{color:var(--neg);}
+  .lbl .sub{font-weight:400;color:var(--text-3);font-size:11.5px;}
+
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:10px;font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .12s;white-space:nowrap;line-height:1;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn-primary:hover:not(:disabled){filter:brightness(1.08);}
+  .btn-ghost{background:transparent;color:var(--text);border-color:var(--border-strong);}
+  .btn-ghost:hover{background:var(--surface-2);}
+  .btn-soft{background:var(--accent-soft);color:var(--accent-ink);}
+  .btn-soft:hover{filter:brightness(.97);}
+  .btn-danger{background:transparent;color:var(--neg);border:1px solid color-mix(in oklch, var(--neg) 35%, transparent);}
+  .btn-danger:hover{background:color-mix(in oklch, var(--neg) 10%, transparent);}
+  .btn-icon{width:34px;height:34px;padding:0;border-radius:10px;color:var(--text-2);}
+  .btn-icon:hover{background:var(--surface-2);color:var(--text);}
+
+  /* Nav */
+  .nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:9px;cursor:pointer;color:var(--text-2);font-weight:500;font-size:14px;transition:all .12s;white-space:nowrap;}
+  .nav-item:hover{background:var(--surface-2);color:var(--text);}
+  .nav-item.active{background:var(--accent-soft);color:var(--accent-ink);font-weight:600;}
+  .nav-item.active svg{color:var(--accent);}
+
+  /* Pill */
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;border:1px solid var(--border);background:var(--surface);color:var(--text-2);}
+  .pill-pos{color:oklch(45% 0.15 155);background:oklch(96% 0.04 155);border-color:oklch(85% 0.07 155);}
+  .pill-neg{color:oklch(45% 0.18 25);background:oklch(96% 0.04 25);border-color:oklch(85% 0.07 25);}
+  .pill-warn{color:oklch(45% 0.14 70);background:oklch(96% 0.04 70);border-color:oklch(85% 0.07 70);}
+  .pill-accent{color:var(--accent-ink);background:var(--accent-soft);border-color:color-mix(in oklch, var(--accent) 30%, transparent);}
+  .dark .pill-pos{color:oklch(80% 0.15 155);background:oklch(22% 0.06 155);border-color:oklch(30% 0.07 155);}
+  .dark .pill-neg{color:oklch(80% 0.15 25);background:oklch(22% 0.06 25);border-color:oklch(30% 0.07 25);}
+  .dark .pill-warn{color:oklch(85% 0.14 70);background:oklch(22% 0.06 70);border-color:oklch(30% 0.07 70);}
+
+  /* Inventory chip */
+  .ic-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:13px;font-weight:500;cursor:pointer;user-select:none;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);transition:all .14s ease;}
+  .ic-chip:hover{transform:translateY(-1px);box-shadow:var(--shadow-card);}
+  .ic-chip .dot{width:7px;height:7px;border-radius:999px;background:var(--text-3);}
+  .ic-chip.low{background:oklch(97% 0.05 75);border-color:oklch(70% 0.16 75);color:oklch(40% 0.14 70);}
+  .ic-chip.low .dot{background:oklch(70% 0.16 75);}
+  .ic-chip.out{background:oklch(96% 0.04 25);border-color:oklch(75% 0.16 25);color:oklch(45% 0.18 25);text-decoration:line-through;}
+  .ic-chip.out .dot{background:oklch(60% 0.20 25);}
+  .dark .ic-chip.low{background:oklch(28% 0.08 70);border-color:oklch(60% 0.14 70);color:oklch(82% 0.13 70);}
+  .dark .ic-chip.out{background:oklch(28% 0.08 25);border-color:oklch(55% 0.16 25);color:oklch(82% 0.13 25);}
+  .ic-qty{width:80px;padding:2px 8px;font-size:11.5px;border:1px solid currentColor;border-radius:10px;background:transparent;color:inherit;outline:none;font:inherit;font-weight:500;}
+  .ic-qty::placeholder{opacity:.5;}
+
+  /* Toast */
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border-strong);box-shadow:var(--shadow-pop);border-radius:12px;padding:11px 16px;font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:10px;min-width:240px;max-width:380px;z-index:200;transform:translateY(8px);opacity:0;pointer-events:none;transition:all .22s;}
+  .toast.show{transform:translateY(0);opacity:1;}
+  .toast.ok{border-left:3px solid var(--pos);}
+  .toast.er{border-left:3px solid var(--neg);}
+  .toast.in{border-left:3px solid var(--accent);}
+
+  /* Modal */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:150;overflow-y:auto;}
+  .modal.show{display:flex;}
+  .modal-box{background:var(--surface);border:1px solid var(--border);border-radius:18px;width:100%;max-width:560px;box-shadow:var(--shadow-pop);}
+
+  /* Switch */
+  .switch{position:relative;width:38px;height:22px;background:var(--border-strong);border-radius:999px;cursor:pointer;transition:background .15s;}
+  .switch::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:999px;transition:transform .18s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+  .switch.on{background:var(--accent);}
+  .switch.on::after{transform:translateX(16px);}
+
+  /* Tables */
+  table.tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
+  .tbl th{text-align:left;padding:10px 12px;background:var(--surface-2);color:var(--text-2);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;}
+  .tbl td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+  .tbl tr:hover td{background:var(--surface-2);}
+  .tbl tr:last-child td{border-bottom:none;}
+
+  /* Sparkline canvas */
+  .spark{width:100%;height:46px;display:block;}
+
+  /* Spinner */
+  .spin{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .8s linear infinite;vertical-align:middle;opacity:.7;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+
+  /* Layout */
+  .app-grid{display:grid;grid-template-columns:264px 1fr;min-height:100vh;}
+  aside.side{transition:transform .25s ease;}
+  @media(max-width:900px){
+    .app-grid{grid-template-columns:1fr;}
+    aside.side{position:fixed;inset:0 auto 0 0;width:280px;z-index:50;transform:translateX(-100%);box-shadow:var(--shadow-pop);}
+    aside.side.mobile-open{transform:translateX(0);}
+    .mobile-tabs{display:flex !important;}
+    .mobile-backdrop.show{display:block !important;}
+  }
+  .mobile-tabs{display:none;}
+  .mobile-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:40;}
+  .scroll-x{overflow-x:auto;scrollbar-width:thin;}
+
+  /* Lucide */
+  [data-lucide]{width:16px;height:16px;stroke-width:1.75;}
+  .ic-lg [data-lucide]{width:20px;height:20px;}
+  .ic-sm [data-lucide]{width:14px;height:14px;}
+
+  /* Misc */
+  details > summary{cursor:pointer;list-style:none;}
+  details > summary::-webkit-details-marker{display:none;}
+  .skel{background:linear-gradient(90deg,var(--surface-2),var(--border),var(--surface-2));background-size:200% 100%;animation:sk 1.2s linear infinite;border-radius:6px;}
+  @keyframes sk{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+  .kbd{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface-2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--text-2);}
+
+  /* Pastel KPI cards (dashboard hero) */
+  .pkpi{
+    position:relative;border-radius:20px;padding:22px 24px;
+    border:1px solid color-mix(in oklch, var(--p-tone) 25%, transparent);
+    background:linear-gradient(135deg, color-mix(in oklch, var(--p-tone) 22%, var(--surface)) 0%, color-mix(in oklch, var(--p-tone) 8%, var(--surface)) 100%);
+    transition:transform .25s cubic-bezier(.2,.7,.2,1), box-shadow .25s;
+    overflow:hidden;
+  }
+  .pkpi:hover{transform:translateY(-3px);box-shadow:0 18px 40px -16px color-mix(in oklch, var(--p-tone) 45%, transparent);}
+  .pkpi-ic{
+    position:absolute;right:18px;bottom:14px;
+    width:64px;height:64px;border-radius:18px;
+    display:flex;align-items:center;justify-content:center;
+    background:color-mix(in oklch, var(--p-tone) 35%, var(--surface));
+    color:color-mix(in oklch, var(--p-tone) 80%, black);
+    opacity:.9;
+  }
+  .pkpi-ic [data-lucide]{width:30px;height:30px;stroke-width:1.8;}
+  .pkpi-eyebrow{color:color-mix(in oklch, var(--p-tone) 75%, black);font-weight:700;font-size:13.5px;letter-spacing:-.005em;}
+  .dark .pkpi{background:linear-gradient(135deg, color-mix(in oklch, var(--p-tone) 32%, var(--surface)) 0%, color-mix(in oklch, var(--p-tone) 12%, var(--surface)) 100%);}
+  .dark .pkpi-eyebrow{color:color-mix(in oklch, var(--p-tone) 85%, white);}
+  .dark .pkpi-ic{background:color-mix(in oklch, var(--p-tone) 45%, var(--surface));color:color-mix(in oklch, var(--p-tone) 90%, white);}
+
+  /* Circular ring stat card */
+  .ring-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:18px;
+    padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;
+    transition:all .2s;
+  }
+  .ring-card:hover{box-shadow:var(--shadow-pop);transform:translateY(-2px);}
+  .ring-svg{width:64px;height:64px;flex-shrink:0;}
+  .ring-svg circle{transition:stroke-dashoffset .8s cubic-bezier(.3,.8,.3,1);}
+  .ring-svg .ring-bg{stroke:var(--surface-2);}
+
+  /* Topbar */
+  .nav-search{
+    display:flex;align-items:center;gap:10px;padding:9px 16px;
+    background:var(--surface-2);border:1px solid transparent;border-radius:999px;
+    color:var(--text-2);transition:all .15s;min-width:280px;
+  }
+  .nav-search:focus-within{background:var(--surface);border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in oklch, var(--accent) 18%, transparent);}
+  .nav-search input{background:transparent;border:none;outline:none;font:inherit;color:var(--text);width:100%;}
+  .nav-search input::placeholder{color:var(--text-3);}
+  .nav-bell{position:relative;width:38px;height:38px;border-radius:999px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;color:var(--text-2);}
+  .nav-bell:hover{background:var(--border);color:var(--text);}
+  .nav-bell-badge{
+    position:absolute;top:-2px;right:-2px;
+    min-width:18px;height:18px;border-radius:999px;
+    background:var(--accent);color:#fff;font-size:10.5px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;padding:0 5px;
+    border:2px solid var(--bg);
+  }
+  .nav-user{
+    display:flex;align-items:center;gap:10px;padding:4px 10px 4px 4px;
+    border-radius:999px;cursor:pointer;transition:background .15s;
+  }
+  .nav-user:hover{background:var(--surface-2);}
+  .nav-avatar{width:36px;height:36px;border-radius:999px;background:linear-gradient(135deg,var(--accent),color-mix(in oklch, var(--accent) 70%, oklch(80% 0.18 320)));color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:13px;letter-spacing:-.02em;}
+
+  /* Sidebar CTA */
+  .side-cta{
+    border-radius:16px;padding:16px;color:#fff;position:relative;overflow:hidden;
+    background:linear-gradient(135deg, oklch(28% 0.06 230), oklch(20% 0.04 230));
+  }
+  .side-cta::before{
+    content:'';position:absolute;inset:-30% -30% auto auto;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle, color-mix(in oklch, var(--accent) 60%, transparent) 0%, transparent 70%);
+  }
+  .side-cta-arrow{
+    width:28px;height:28px;border-radius:999px;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;color:#fff;
+    transition:transform .2s;
+  }
+  .side-cta:hover .side-cta-arrow{transform:translateX(3px);}
+</style>
+</head>
+<body class="antialiased">
+
+<template id="__bundler_thumbnail" data-bg-color="#fafaf9">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#fafaf9"/>
+    <g transform="translate(600 400)">
+      <circle r="180" fill="#1c1917"/>
+      <text x="0" y="40" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="160" font-weight="900" fill="#fafaf9" letter-spacing="-12">yy.</text>
+    </g>
+    <text x="600" y="660" text-anchor="middle" font-family="ui-sans-serif,system-ui,sans-serif" font-size="22" font-weight="600" fill="#57534e" letter-spacing="2">SALES CONSOLE</text>
+    <g transform="translate(600 720)" fill="none" stroke-width="2">
+      <circle cx="-30" cy="0" r="6" fill="oklch(60% 0.16 245)" stroke="none"/>
+      <circle cx="0" cy="0" r="6" fill="oklch(60% 0.19 25)" stroke="none"/>
+      <circle cx="30" cy="0" r="6" fill="oklch(70% 0.16 55)" stroke="none"/>
+    </g>
+  </svg>
+</template>
+
+<!-- ============================================================== -->
+<!-- APP SHELL                                                     -->
+<!-- ============================================================== -->
+<div class="app-grid">
+
+  <!-- SIDEBAR (desktop) -->
+  <aside class="side border-r hairline px-4 py-5 flex flex-col" style="background:var(--surface);">
+    <div class="flex items-center gap-2 px-2 mb-6">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:var(--text);color:var(--bg);font-weight:800;letter-spacing:-.05em;">yy</div>
+      <div>
+        <div class="font-bold text-[15px] leading-tight">yellowyellow<span class="muted">.co</span></div>
+        <div class="text-[11px] muted-2 mt-0.5">Sales Console</div>
+      </div>
+    </div>
+
+    <!-- Store switcher -->
+    <div class="mb-5">
+      <div class="text-[10.5px] font-semibold muted-2 tracking-widest px-2 mb-2">STORES</div>
+      <div id="store_switcher" class="flex flex-col gap-1"></div>
+    </div>
+
+    <!-- View nav -->
+    <nav id="view_nav" class="flex flex-col gap-0.5">
+      <div class="text-[10.5px] font-semibold muted-2 tracking-widest px-2 mb-1">WORKSPACE</div>
+    </nav>
+
+    <div class="mt-auto pt-4 border-t hairline">
+      <button class="side-cta w-full flex items-start gap-3 text-left mb-3" onclick="switchView('entry')">
+        <div class="flex-1 min-w-0 relative z-10">
+          <div class="font-bold text-[14px] text-white">บันทึกยอดวันนี้</div>
+          <div class="text-[11.5px] text-white/70 mt-0.5 leading-snug">บันทึก + ส่ง LINE & Sheets อัตโนมัติ</div>
+        </div>
+        <div class="side-cta-arrow relative z-10"><i data-lucide="arrow-right" style="width:14px;height:14px"></i></div>
+      </button>
+      <div class="flex items-center justify-between px-2">
+        <div class="flex items-center gap-2">
+          <i data-lucide="moon"></i>
+          <span class="text-[13px] muted">Dark mode</span>
+        </div>
+        <div id="theme_toggle" class="switch" role="switch"></div>
+      </div>
+      <div class="text-[10.5px] muted-2 mt-3 px-2 leading-relaxed">
+        v1.0 · <span class="kbd">⌘K</span> nav · all data local
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile backdrop (clicks close sidebar) -->
+  <div class="mobile-backdrop" onclick="toggleSidebar()"></div>
+
+  <!-- MAIN -->
+  <main class="flex flex-col" style="min-width:0;">
+
+    <!-- Topbar -->
+    <header class="px-5 md:px-8 py-3.5 border-b hairline flex items-center gap-3 sticky top-0 z-20" style="background:color-mix(in oklch, var(--bg) 85%, transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);">
+      <button class="btn btn-icon md:hidden flex-shrink-0" onclick="toggleSidebar()" title="Menu"><i data-lucide="menu"></i></button>
+      <label class="nav-search flex-1 max-w-md" onclick="openCmd()">
+        <i data-lucide="search" style="width:15px;height:15px;flex-shrink:0;"></i>
+        <input placeholder="ค้นหา หน้า / ร้าน / รายการ..." onfocus="openCmd();this.blur()" readonly style="cursor:pointer;">
+        <span class="kbd hidden md:inline">⌘K</span>
+      </label>
+      <div class="flex items-center gap-2 ml-auto flex-shrink-0">
+        <span id="topbar_hook" class="pill pill-warn hidden xl:inline-flex" style="cursor:pointer">⚙️ ตั้งค่า</span>
+        <button class="nav-bell" title="แจ้งเตือนสต็อก" onclick="switchView('stock')">
+          <i data-lucide="bell" style="width:16px;height:16px;"></i>
+          <span class="nav-bell-badge" id="topbar_alert_badge" style="display:none">0</span>
+        </button>
+        <button class="nav-bell hidden md:flex" title="ตั้งค่า" onclick="switchView('settings')">
+          <i data-lucide="settings" style="width:16px;height:16px;"></i>
+        </button>
+        <div class="nav-user" onclick="switchView('admin')">
+          <div class="nav-avatar" id="nav_avatar">yy</div>
+          <div class="hidden lg:block leading-tight">
+            <div class="font-semibold text-[13px]">Admin</div>
+            <div class="text-[11px] muted-2" id="nav_user_sub">workspace</div>
+          </div>
+        </div>
+      </div>
+      <!-- Hidden but kept for backward compat with renderShell -->
+      <h1 id="topbar_title" hidden></h1>
+      <span id="topbar_sub_pill" hidden></span>
+      <span id="topbar_sub" hidden></span>
+    </header>
+
+    <!-- View slot -->
+    <div id="view" class="flex-1 px-5 md:px-8 py-6 md:py-8 pb-24 md:pb-8" style="min-height:0;"></div>
+
+    <!-- Mobile bottom tabs -->
+    <nav class="mobile-tabs fixed bottom-0 left-0 right-0 border-t hairline px-2 py-1.5 z-30" style="background:color-mix(in oklch, var(--bg) 90%, transparent);backdrop-filter:blur(12px);">
+      <div id="mobile_tabs" class="flex justify-around"></div>
+    </nav>
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><i data-lucide="info" id="toast_ic"></i><span id="toast_msg">—</span></div>
+
+<!-- Cmd palette modal -->
+<div class="modal" id="cmd_modal">
+  <div class="modal-box mt-16">
+    <div class="p-3 border-b hairline">
+      <input id="cmd_inp" class="inp" placeholder="ค้นหา หน้า / ร้าน / คำสั่ง..." style="border:none;">
+    </div>
+    <div id="cmd_results" class="p-2 max-h-[60vh] overflow-y-auto"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================== *
+ *  yy. — Unified multi-store sales console
+ *  Single file, vanilla JS ES6+, localStorage backed.
+ * ============================================================== */
+
+/* --------- 1. STORE CONFIGURATIONS --------- */
+/* Each store: schema (basic/sale/cost/(boxegg)), inventory catalog,
+   accent colors, calc behavior, payload + line message builder.    */
+
+const STORE_DEFS = {
+  /* ----- 1A. ร้านนมตุ๋น (Blue) — units-based ----- */
+  nmtun: {
+    id: 'nmtun',
+    name: 'ร้านนมตุ๋น',
+    sub: 'เครื่องดื่มนม · Steamed Milk',
+    shortName: 'นมตุ๋น',
+    badge: '🐄',
+    icon: 'milk',
+    accentHue: 245,
+    saleType: 'units',         // sale fields are unit counts (glasses)
+    hasDynCosts: true,         // dynamic ad-hoc cost rows
+    hasBoxEgg: false,
+    salesUnit: 'แก้ว',
+    defaultBasic: [
+      {id:'fd_date',     key:'date',     label:'วันที่',   type:'date', req:true, fixed:true},
+      {id:'fd_recorder', key:'recorder', label:'ผู้บันทึก', type:'text', req:false, fixed:false, ph:'ชื่อ...'},
+      {id:'fd_note',     key:'note',     label:'หมายเหตุ',  type:'text', req:false, fixed:true,  ph:'เช่น พี่บิ๊กเบิก 400'}
+    ],
+    defaultSale: [
+      {id:'fs_float',  key:'float',  label:'เงินทอนเริ่มต้น', type:'number', req:false, fixed:true, ph:'0', role:'minus', section:'cash'},
+      {id:'fs_cash',   key:'cashIn', label:'เงินสดรับรวม',    type:'number', req:true,  fixed:true, ph:'0', role:'plus',  section:'cash', sub:'รวมเงินทอน'},
+      {id:'fs_ice',    key:'ice',    label:'ค่าน้ำแข็ง',      type:'number', req:false, fixed:false,ph:'0', role:'minus', section:'cash'},
+      {id:'fs_cold',   key:'cold',   label:'แก้วเย็น',        type:'number', req:false, fixed:true, ph:'0', role:'unit',  section:'units'},
+      {id:'fs_hotG',   key:'hotG',   label:'แก้วร้อน (แก้ว)', type:'number', req:false, fixed:true, ph:'0', role:'unit',  section:'units'},
+      {id:'fs_hotB',   key:'hotB',   label:'แก้วร้อน (ถุง)',  type:'number', req:false, fixed:true, ph:'0', role:'unit',  section:'units', sub:'≈ 5 แก้ว/ถุง'},
+      {id:'fs_bottle', key:'bottle', label:'นมขวด',          type:'number', req:false, fixed:false,ph:'0', role:'count', section:'units'}
+    ],
+    defaultCost: [],
+    defaultCatalog: [
+      {cat:'🥛 นม / วัตถุดิบหลัก',  items:['นมตุ๋น','นมผสม','นมขนหวาน','นมขนจืด','นม (นมสด)','โยเกิร์ต','น้ำผึ้ง']},
+      {cat:'🧴 ซอส / แยม / ไซรัป',  items:['คาราเมล','ซอสมะม่วง','ซอสมิกซ์','แยมสตอ','ไซรัปมะม่วง','โอวัลติน','ไวท์มอลต์','โกโก้','ผงมัทฉะ','ผงนัว','ผงปั่น']},
+      {cat:'🧁 ท็อปปิ้ง / อื่นๆ',    items:['โอริโอ้','ปีโป้','เผือก','นูเทลล่า','มะม่วง (ผลไม้)']},
+      {cat:'🥤 ภาชนะ / บรรจุภัณฑ์',  items:['แก้วเย็น','แก้วร้อน','ฝาโดม','หลอดเย็น','หลอดไข่มุก','ถุงทิ้วแก้ว','ถุงเย็น 10×15']},
+      {cat:'🧹 อุปกรณ์ / สิ่งของ',   items:['ทิชชู่','เมจิกคลีน','ผงซักฟอก','น้ำถัง','น้ำแดงเฮลบูบอย']}
+    ],
+    defaultTarget: 30000
+  },
+  /* ----- 1B. สุกี้ภัสสร (Red) — money/role-based ----- */
+  pussorn: {
+    id: 'pussorn',
+    name: 'สุกี้ภัสสร',
+    sub: 'สุกี้ · Pussorn Suki',
+    shortName: 'ภัสสร',
+    badge: '🍲',
+    icon: 'utensils-crossed',
+    accentHue: 25,
+    saleType: 'money',
+    hasDynCosts: false,
+    hasBoxEgg: false,
+    salesUnit: '฿',
+    defaultBasic: [
+      {id:'fd_date',     key:'date',     label:'วันที่',   type:'date', req:true, fixed:true},
+      {id:'fd_recorder', key:'recorder', label:'ผู้บันทึก', type:'text', req:false, fixed:false, ph:'ชื่อ...'}
+    ],
+    defaultSale: [
+      {id:'fs_cash',   key:'cashIn',  label:'เงินสด',          type:'number', req:true,  fixed:true,  ph:'0', role:'plus',  section:'sale'},
+      {id:'fs_float',  key:'float',   label:'เงินทอนเริ่มต้น', type:'number', req:false, fixed:true,  ph:'0', role:'minus', section:'sale'},
+      {id:'fs_orders', key:'orders',  label:'จำนวนเสิร์ฟ',     type:'number', req:false, fixed:false, ph:'0', role:'count', section:'sale'}
+    ],
+    defaultCost: [
+      {id:'fc_water', key:'water',     label:'ค่าน้ำ',         ph:'0', fixed:false},
+      {id:'fc_ice',   key:'ice',       label:'น้ำแข็ง',        ph:'0', fixed:false},
+      {id:'fc_other', key:'otherCost', label:'ค่าใช้จ่ายอื่น', ph:'0', fixed:false}
+    ],
+    defaultCatalog: [
+      {cat:'🥩 เนื้อสัตว์ / ทะเล',  items:['หมูสด','หมูสุก','กุ้งสด','กุ้งสุก','หมึกวง','ปลาหมึกรอบ','ไข่']},
+      {cat:'🥬 ผัก / เส้น',         items:['ผักกาดขาว','ชื่นฉาย','วุ้นเส้น','บะหมี่หยก','เส้นมัน']},
+      {cat:'🫕 ซอส / เครื่องปรุง',  items:['น้ำจิ้มสุกี้กวางตุ้ง','น้ำจิ้มสุกี้เต้าหู้ยี้','ซุปฟ้าไทย','หม่าลาฟ้าไทย','ผงหม่าล่า','น้ำมัน']},
+      {cat:'📦 บรรจุภัณฑ์',         items:['ถุงหิ้ว 7x15','กล่องน้ำกลับบ้าน','กล่องกระดาษคราฟ','ถ้วยหานนี','ช้อน','ส้อม','ตะเกียบ']},
+      {cat:'🔧 อุปกรณ์อื่นๆ',       items:['น้ำถัง','แก๊สหุงต้ม','ใบอดเดอร์','ถุงดำ','ถุงเย็น 10x15']}
+    ],
+    defaultTarget: 90000
+  },
+  /* ----- 1C. ร้านข้าวสุกี้ไข่ข้น (Orange) — money + box/egg ----- */
+  khaow: {
+    id: 'khaow',
+    name: 'ข้าวสุกี้ไข่ข้น',
+    sub: 'ข้าวสุกี้ไข่ข้น · Khao Suki Khai Khon',
+    shortName: 'ไข่ข้น',
+    badge: '🥚',
+    icon: 'egg',
+    accentHue: 55,
+    saleType: 'money',
+    hasDynCosts: false,
+    hasBoxEgg: true,
+    salesUnit: '฿',
+    defaultBasic: [
+      {id:'fd_date',     key:'date',     label:'วันที่',   type:'date', req:true, fixed:true},
+      {id:'fd_recorder', key:'recorder', label:'ผู้บันทึก', type:'text', req:false, fixed:false, ph:'ชื่อ...'}
+    ],
+    defaultSale: [
+      {id:'fs_cash',  key:'cashIn',       label:'เงินสด',             type:'number', req:true,  fixed:true,  ph:'0', role:'plus',  section:'sale'},
+      {id:'fs_float', key:'float',        label:'เงินทอนเริ่มต้น',    type:'number', req:false, fixed:true,  ph:'0', role:'minus', section:'sale'},
+      {id:'fs_serv',  key:'servings',     label:'จำนวนเสิร์ฟ (ปกติ)', type:'number', req:false, fixed:false, ph:'0', role:'count', section:'sale'},
+      {id:'fs_half',  key:'servingsHalf', label:'เสิร์ฟลด 50%',       type:'number', req:false, fixed:false, ph:'0', role:'count', section:'sale'},
+      {id:'fs_box',   key:'boxesLeft',    label:'กล่องเปล่าเหลือ',    type:'number', req:false, fixed:false, ph:'0', role:'count', section:'sale'}
+    ],
+    defaultCost: [
+      {id:'fc_ice',   key:'ice',       label:'ค่าน้ำแข็ง',     ph:'0', fixed:false},
+      {id:'fc_gas',   key:'gas',       label:'ค่าแก๊ส',        ph:'0', fixed:false},
+      {id:'fc_other', key:'otherCost', label:'ค่าใช้จ่ายอื่น', ph:'0', fixed:false}
+    ],
+    defaultBoxEgg: [
+      {id:'fb_sbox', key:'startBoxes', label:'กล่องเริ่มต้น', ph:'0', fixed:true},
+      {id:'fb_ebox', key:'endBoxes',   label:'กล่องคงเหลือ',  ph:'0', fixed:true},
+      {id:'fb_segg', key:'startEggs',  label:'ไข่เริ่มต้น',   ph:'0', fixed:true},
+      {id:'fb_eegg', key:'endEggs',    label:'ไข่คงเหลือ',    ph:'0', fixed:true}
+    ],
+    defaultCatalog: [
+      {cat:'🥚 ไข่ / วัตถุดิบหลัก',   items:['ไข่ไก่','ข้าวสาร','น้ำมัน']},
+      {cat:'🥩 เนื้อสัตว์ / ทะเล',    items:['หมูสด','หมูสุก','หมึก','กุ้งสด','กุ้งสุก']},
+      {cat:'🫕 ซอส / เครื่องปรุง',    items:['น้ำจิ้มสุกี้','พริกน้ำปลา']},
+      {cat:'📦 บรรจุภัณฑ์',           items:['กล่องเปล่า','ถุงหิ้วลูกค้า','ช้อนส้อม','ทิชชู่แห้ง','ทิชชู่เปียก']},
+      {cat:'💧 น้ำ / เชื้อเพลิง',     items:['น้ำถัง','แก๊สหุงต้ม']}
+    ],
+    defaultTarget: 60000
+  }
+};
+
+const STORE_IDS = ['nmtun','pussorn','khaow'];
+
+const VIEWS = [
+  {id:'dashboard', label:'Dashboard',  icon:'layout-dashboard', th:'แดชบอร์ด'},
+  {id:'entry',     label:'บันทึกยอดขาย', icon:'pencil-line',     th:'บันทึกยอดขาย'},
+  {id:'history',   label:'ประวัติ',     icon:'history',         th:'ประวัติ'},
+  {id:'stock',     label:'สต็อก',       icon:'package',         th:'สต็อก'},
+  {id:'admin',     label:'แอดมิน',      icon:'sliders-horizontal', th:'แอดมิน'},
+  {id:'settings',  label:'ตั้งค่า',     icon:'settings',        th:'ตั้งค่า'}
+];
+
+/* --------- 2. STATE / STORAGE --------- */
+const LS = {
+  get(k, def=null){ try{ const v = localStorage.getItem(k); return v==null ? def : JSON.parse(v); }catch(e){ return def; } },
+  set(k, v){ localStorage.setItem(k, JSON.stringify(v)); },
+  raw(k){ return localStorage.getItem(k); }
+};
+
+function k(storeId, name){ return `yy.${storeId}.${name}`; }
+
+function getStoreState(storeId){
+  const def = STORE_DEFS[storeId];
+  return {
+    basic:    LS.get(k(storeId,'basic'))    || deepCopy(def.defaultBasic),
+    sale:     LS.get(k(storeId,'sale'))     || deepCopy(def.defaultSale),
+    cost:     LS.get(k(storeId,'cost'))     || deepCopy(def.defaultCost),
+    boxegg:   def.hasBoxEgg ? (LS.get(k(storeId,'boxegg')) || deepCopy(def.defaultBoxEgg)) : [],
+    catalog:  LS.get(k(storeId,'catalog'))  || deepCopy(def.defaultCatalog),
+    records:  LS.get(k(storeId,'records'))  || [],
+    hook:     LS.get(k(storeId,'hook'))     || '',
+    target:   LS.get(k(storeId,'target'))   || def.defaultTarget,
+    accentHue: LS.get(k(storeId,'accentHue')) ?? def.accentHue
+  };
+}
+function saveField(storeId, key, value){ LS.set(k(storeId,key), value); }
+
+/* --------- 3. GLOBAL STATE --------- */
+const state = {
+  activeStore: LS.get('yy.activeStore') || 'nmtun',
+  view: 'dashboard',                  // current view (per-store remembered)
+  theme: LS.get('yy.theme') || 'light',
+  stores: {},                          // storeId → state object
+  formDraft: {},                       // ephemeral form values
+  invState: {},                        // {name: 'normal'|'low'|'out'}
+  invNotes: {},                        // {name: qty string}
+  dynCosts: [],                        // [{amt,desc}] for nmtun
+  editMode: { catalog: false, fields: false },
+  search: ''
+};
+
+function loadAllStores(){
+  STORE_IDS.forEach(id => state.stores[id] = getStoreState(id));
+}
+function reloadStore(id){ state.stores[id] = getStoreState(id); }
+
+/* --------- 4. HELPERS --------- */
+function deepCopy(o){ return JSON.parse(JSON.stringify(o)); }
+function fmt(n){ return Number(n||0).toLocaleString('th-TH'); }
+function fmtMoney(n){ const v = Number(n||0); return (v<0?'-':'') + '฿' + Math.abs(v).toLocaleString('th-TH'); }
+function todayISO(){ const d = new Date(); return d.toISOString().split('T')[0]; }
+function fmtDate(iso){ if(!iso) return '-'; const [y,m,d]=iso.split('-'); return d+'/'+m+'/'+String(+y+543).slice(-2); }
+function fmtDateLong(iso){ if(!iso) return '-'; const d=new Date(iso); const days=['อา','จ','อ','พ','พฤ','ศ','ส']; return `วัน${days[d.getDay()]} ${fmtDate(iso)}`; }
+function escHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function uid(){ return 'fx_'+Math.random().toString(36).slice(2,9); }
+function isoOffset(days){ const d = new Date(); d.setDate(d.getDate()-days); return d.toISOString().split('T')[0]; }
+function daysBetween(a,b){ return Math.round((new Date(b)-new Date(a))/86400000); }
+
+/* --------- 5. THEME / ACCENT --------- */
+function applyTheme(){
+  document.documentElement.classList.toggle('dark', state.theme==='dark');
+  document.documentElement.classList.toggle('light', state.theme==='light');
+  document.getElementById('theme_toggle').classList.toggle('on', state.theme==='dark');
+}
+function applyAccent(){
+  const s = state.stores[state.activeStore];
+  const hue = s.accentHue;
+  const isDark = state.theme==='dark';
+  const l = isDark ? 72 : 60;
+  const root = document.documentElement.style;
+  root.setProperty('--accent',      `oklch(${l}% 0.16 ${hue})`);
+  root.setProperty('--accent-soft', isDark ? `oklch(28% 0.07 ${hue})` : `oklch(95% 0.04 ${hue})`);
+  root.setProperty('--accent-ink',  isDark ? `oklch(85% 0.10 ${hue})` : `oklch(40% 0.18 ${hue})`);
+}
+
+/* --------- 6. TOAST --------- */
+let toastT;
+function toast(msg, kind='in'){
+  const t = document.getElementById('toast');
+  t.className = 'toast show ' + kind;
+  document.getElementById('toast_msg').textContent = msg;
+  const ic = {ok:'check-circle-2', er:'alert-circle', in:'info'}[kind];
+  document.getElementById('toast_ic').setAttribute('data-lucide', ic);
+  lucide.createIcons({nodes:[document.getElementById('toast_ic')]});
+  clearTimeout(toastT);
+  toastT = setTimeout(()=> t.classList.remove('show'), 2800);
+}
+
+/* --------- 7. CALCULATION --------- */
+function computeNet(storeId, valuesObj, dynCostsArr){
+  const def = STORE_DEFS[storeId];
+  const st = state.stores[storeId];
+  let plus=0, minus=0, costs=0, dyn=0;
+  [...st.sale].forEach(f => {
+    const v = +valuesObj[f.key] || 0;
+    if(f.role==='plus') plus += v;
+    else if(f.role==='minus') minus += v;
+  });
+  st.cost.forEach(f => { costs += +valuesObj[f.key]||0; });
+  if(def.hasDynCosts && Array.isArray(dynCostsArr))
+    dyn = dynCostsArr.reduce((s,c)=>s + (+c.amt||0), 0);
+  return plus - minus - costs - dyn;
+}
+function computeTotal(storeId, valuesObj){
+  const def = STORE_DEFS[storeId];
+  const st = state.stores[storeId];
+  if(def.saleType==='units'){
+    return st.sale.filter(f=>f.role==='unit').reduce((s,f)=>s + (+valuesObj[f.key]||0), 0);
+  }
+  return st.sale.filter(f=>f.role==='plus').reduce((s,f)=>s + (+valuesObj[f.key]||0), 0);
+}
+
+/* --------- 8. INVENTORY (chip cycle) --------- */
+function cycleInvState(name){
+  const cur = state.invState[name] || 'normal';
+  state.invState[name] = cur==='normal' ? 'low' : cur==='low' ? 'out' : 'normal';
+  if(state.invState[name] !== 'low') delete state.invNotes[name];
+  renderInventoryArea();
+}
+function getInventorySummary(){
+  const left=[], out=[];
+  const st = state.stores[state.activeStore];
+  st.catalog.forEach(sec => sec.items.forEach(name => {
+    const s = state.invState[name];
+    if(s==='low'){
+      const q = state.invNotes[name]||'';
+      left.push(q ? `${name} (${q})` : name);
+    } else if(s==='out'){
+      out.push(name);
+    }
+  }));
+  return {leftItems:left, outItems:out};
+}
+function resetInventory(){ state.invState={}; state.invNotes={}; }
+
+/* --------- 9. LINE MESSAGE BUILDER --------- */
+function buildLineMsg(storeId, rec){
+  const def = STORE_DEFS[storeId];
+  const st = state.stores[storeId];
+  const lines = [`${def.badge} ${def.name} — ยอดขายประจำวัน`];
+  lines.push(`📅 ${fmtDate(rec.dateISO||rec.date)}${rec.recorder?' | 👤 '+rec.recorder:''}`);
+  lines.push('');
+  lines.push(`💰 เงินสดสุทธิ: ${fmtMoney(rec.net)}`);
+  // cash composition
+  const cashIn = +rec.cashIn||0, fl = +rec.float||0;
+  const costSum = st.cost.reduce((s,f)=>s+(+rec[f.key]||0),0);
+  const dynSum = (rec.costsDyn||[]).reduce((s,c)=>s+(+c.amt||0),0);
+  const compose = [];
+  if(cashIn) compose.push(`รับ ${fmtMoney(cashIn)}`);
+  if(fl) compose.push(`ทอน ${fmtMoney(fl)}`);
+  st.cost.forEach(f => { const v=+rec[f.key]||0; if(v) compose.push(`${f.label} ${fmtMoney(v)}`); });
+  if(dynSum) compose.push(`อื่นๆ ${fmtMoney(dynSum)}`);
+  if(compose.length) lines.push('   ' + compose.join(' | '));
+  if(dynSum && rec.costsDyn){
+    const detail = rec.costsDyn.filter(c=>c.amt||c.desc).map(c=>c.desc?`${c.desc} ฿${fmt(c.amt)}`:`฿${fmt(c.amt)}`).join(', ');
+    if(detail) lines.push(`   📌 ${detail}`);
+  }
+  lines.push('');
+  // sale
+  if(def.saleType==='units'){
+    lines.push(`${def.badge} ยอดขาย: ${fmt(rec.total)} ${def.salesUnit}`);
+    const parts=[];
+    st.sale.filter(f=>f.role==='unit' || f.role==='count').forEach(f => {
+      const v = +rec[f.key]||0;
+      if(v) parts.push(`${f.label} ${fmt(v)}`);
+    });
+    if(parts.length) lines.push('   ' + parts.join(' | '));
+  } else {
+    const parts=[];
+    st.sale.filter(f=>f.role==='count').forEach(f => {
+      const v = +rec[f.key]||0;
+      if(v) parts.push(`${f.label} ${fmt(v)}`);
+    });
+    if(parts.length) lines.push(`📋 ${parts.join(' | ')}`);
+  }
+  // box/egg
+  if(def.hasBoxEgg){
+    const be = st.boxegg.map(f=>({l:f.label,v:+rec[f.key]||0}));
+    if(be.some(x=>x.v)) lines.push('📦 ' + be.map(x=>`${x.l}: ${fmt(x.v)}`).join(' | '));
+  }
+  lines.push('');
+  lines.push(`⚠️ ของเหลือ: ${(rec.leftItems||[]).join(', ')||'ไม่มี'}`);
+  lines.push(`❌ ของหมด: ${(rec.outItems||[]).join(', ')||'ไม่มี'}`);
+  if(rec.note) lines.push(`📝 ${rec.note}`);
+  return lines.join('\n');
+}
+
+/* --------- 10. PAYLOAD BUILDER --------- */
+function buildPayload(storeId, rec){
+  const def = STORE_DEFS[storeId];
+  const st = state.stores[storeId];
+  const payload = {
+    store: def.id,
+    storeName: def.name,
+    date: fmtDate(rec.dateISO||rec.date),
+    dateISO: rec.dateISO||rec.date,
+    recorder: rec.recorder||'',
+    note: rec.note||'',
+    net: rec.net||0,
+    total: rec.total||0,
+    leftItems: (rec.leftItems||[]).join(', '),
+    outItems: (rec.outItems||[]).join(', '),
+    timestamp: new Date().toLocaleString('th-TH',{timeZone:'Asia/Bangkok'}),
+  };
+  // unify all field keys → values
+  [...st.sale, ...st.cost, ...(def.hasBoxEgg?st.boxegg:[])].forEach(f=>{
+    payload[f.key] = rec[f.key] || 0;
+  });
+  if(def.hasDynCosts){
+    const dc = rec.costsDyn||[];
+    payload.otherCost = dc.reduce((s,c)=>s+(+c.amt||0),0);
+    payload.costDetails = dc.filter(c=>c.amt||c.desc).map(c=>c.desc?`${c.desc}(฿${c.amt})`:`฿${c.amt}`).join(', ');
+  } else {
+    payload.costDetails = rec.costDetails||'';
+  }
+  payload.lineMessage = buildLineMsg(storeId, rec);
+  return payload;
+}
+
+/* --------- 11. SUBMIT / SYNC --------- */
+async function postWebhook(storeId, rec){
+  const st = state.stores[storeId];
+  if(!st.hook) return {ok:false, reason:'no-hook'};
+  const payload = buildPayload(storeId, rec);
+  try{
+    await fetch(st.hook, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify(payload)});
+    return {ok:true};
+  }catch(e){
+    return {ok:false, reason:e.message};
+  }
+}
+async function syncRecord(storeId, idx, btnEl){
+  const st = state.stores[storeId];
+  const rec = st.records[idx];
+  if(btnEl){ btnEl.disabled=true; btnEl.innerHTML='<span class="spin"></span>'; }
+  const r = await postWebhook(storeId, rec);
+  if(r.ok){
+    rec.synced = true;
+    LS.set(k(storeId,'records'), st.records);
+    if(btnEl){ btnEl.disabled=false; btnEl.innerHTML='<i data-lucide="check"></i>'; lucide.createIcons({nodes:[btnEl]}); }
+    toast('✅ ส่งสำเร็จ','ok');
+  } else {
+    if(btnEl){ btnEl.disabled=false; btnEl.innerHTML='<i data-lucide="alert-circle"></i>'; lucide.createIcons({nodes:[btnEl]}); }
+    toast(r.reason==='no-hook' ? '⚙️ ยังไม่ได้ตั้งค่า webhook' : 'ส่งไม่ได้: '+r.reason, 'er');
+  }
+}
+async function syncAll(storeId){
+  const st = state.stores[storeId];
+  if(!st.hook){ toast('⚙️ ยังไม่ได้ตั้งค่า webhook','er'); return; }
+  let ok=0, fail=0;
+  toast(`⏳ กำลังส่ง ${st.records.length} รายการ...`,'in');
+  for(const rec of st.records){
+    const r = await postWebhook(storeId, rec);
+    if(r.ok){ rec.synced=true; ok++; } else fail++;
+    await new Promise(r=>setTimeout(r,250));
+  }
+  LS.set(k(storeId,'records'), st.records);
+  toast(`✅ ส่ง ${ok} รายการ${fail?` · ล้มเหลว ${fail}`:''}`, ok>0?'ok':'er');
+  renderView();
+}
+
+/* --------- 12. RENDER: SHELL --------- */
+function renderShell(){
+  // Store switcher
+  const sw = document.getElementById('store_switcher');
+  sw.innerHTML = STORE_IDS.map(id => {
+    const d = STORE_DEFS[id];
+    const active = state.activeStore===id;
+    return `<button class="nav-item ${active?'active':''}" onclick="switchStore('${id}')">
+      <span class="text-base leading-none">${d.badge}</span>
+      <span class="flex-1 text-left truncate">${escHtml(d.shortName)}</span>
+      ${active?'<i data-lucide="circle-dot"></i>':''}
+    </button>`;
+  }).join('');
+
+  // View nav (desktop)
+  const nav = document.getElementById('view_nav');
+  nav.innerHTML = `<div class="text-[10.5px] font-semibold muted-2 tracking-widest px-2 mb-1">WORKSPACE</div>` + 
+    VIEWS.map(v => `<button class="nav-item ${state.view===v.id?'active':''}" onclick="switchView('${v.id}')">
+      <i data-lucide="${v.icon}"></i><span>${v.th}</span>
+    </button>`).join('');
+
+  // Mobile tabs (compact, only 5 most-used)
+  const mt = document.getElementById('mobile_tabs');
+  mt.innerHTML = VIEWS.slice(0,5).map(v => `<button class="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg ${state.view===v.id?'text-accent-ink bg-accent-soft':'muted'}" onclick="switchView('${v.id}')">
+    <i data-lucide="${v.icon}" style="width:18px;height:18px"></i>
+    <span class="text-[10.5px] font-medium">${v.th}</span>
+  </button>`).join('');
+
+  // Topbar
+  const d = STORE_DEFS[state.activeStore];
+  const v = VIEWS.find(v=>v.id===state.view) || VIEWS[0];
+  document.getElementById('topbar_title').textContent = `${v.th}`;
+  document.getElementById('topbar_sub').textContent = `${d.name} · ${d.sub}`;
+  const pill = document.getElementById('topbar_sub_pill');
+  pill.textContent = d.badge + ' ' + d.shortName;
+  pill.className = 'pill pill-accent hidden lg:inline-flex';
+
+  // User avatar reflects active store
+  const av = document.getElementById('nav_avatar');
+  if(av){ av.textContent = d.badge; av.style.fontSize='18px'; }
+  const us = document.getElementById('nav_user_sub');
+  if(us){ us.textContent = d.shortName + ' workspace'; }
+
+  // Stock alert badge — items low/out across last 14 days, current store
+  const st = state.stores[state.activeStore];
+  const alertCount = (() => {
+    const set = new Set();
+    st.records.filter(r=>r.dateISO>=isoOffset(14)).forEach(r=>{
+      (r.leftItems||[]).forEach(s=>set.add('low:'+s.replace(/\s*\(.+\)$/,'')));
+      (r.outItems||[]).forEach(s=>set.add('out:'+s));
+    });
+    return set.size;
+  })();
+  const badge = document.getElementById('topbar_alert_badge');
+  if(badge){
+    if(alertCount>0){ badge.style.display='flex'; badge.textContent = alertCount>99?'99+':alertCount; }
+    else badge.style.display='none';
+  }
+
+  const hp = document.getElementById('topbar_hook');
+  if(state.stores[state.activeStore].hook){
+    hp.className = 'pill pill-pos hidden lg:inline-flex';
+    hp.innerHTML = '<i data-lucide="link" style="width:11px;height:11px"></i> เชื่อมต่อแล้ว';
+  } else {
+    hp.className = 'pill pill-warn hidden lg:inline-flex';
+    hp.innerHTML = '<i data-lucide="alert-triangle" style="width:11px;height:11px"></i> ตั้งค่าเชื่อมต่อ';
+    hp.style.cursor='pointer';
+    hp.onclick = ()=> switchView('settings');
+  }
+}
+
+function toggleSidebar(){
+  const aside = document.querySelector('aside.side');
+  const bd = document.querySelector('.mobile-backdrop');
+  if(!aside) return;
+  aside.classList.toggle('mobile-open');
+  if(bd) bd.classList.toggle('show');
+}
+
+/* --------- 13. NAVIGATION --------- */
+function switchStore(id){
+  if(!STORE_DEFS[id]) return;
+  state.activeStore = id;
+  LS.set('yy.activeStore', id);
+  state.view = LS.get('yy.lastView.'+id) || 'dashboard';
+  resetInventory();
+  state.dynCosts = [];
+  state.formDraft = {};
+  applyAccent();
+  renderShell();
+  renderView();
+  lucide.createIcons();
+}
+function switchView(v){
+  if(!VIEWS.find(x=>x.id===v)) return;
+  state.view = v;
+  LS.set('yy.lastView.'+state.activeStore, v);
+  renderShell();
+  renderView();
+  lucide.createIcons();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* --------- 14. RENDER: VIEW DISPATCH --------- */
+function renderView(){
+  const root = document.getElementById('view');
+  const fns = { dashboard:renderDashboard, entry:renderEntry, history:renderHistory, stock:renderStock, admin:renderAdmin, settings:renderSettings };
+  root.innerHTML = '<div class="muted text-center py-12"><span class="spin"></span> กำลังโหลด...</div>';
+  setTimeout(()=>{ (fns[state.view]||renderDashboard)(root); lucide.createIcons(); }, 20);
+}
+
+</script>
+
+<!-- ============================================================== -->
+<!-- VIEW: DASHBOARD                                                 -->
+<!-- ============================================================== -->
+<script>
+function renderDashboard(root){
+  const allStores = STORE_IDS.map(id => ({id, def:STORE_DEFS[id], state:state.stores[id]}));
+  const active = state.activeStore;
+  const st = state.stores[active];
+  const def = STORE_DEFS[active];
+
+  // Build 30-day window
+  const today = new Date();
+  const days = Array.from({length:30}, (_,i)=>{
+    const d = new Date(today); d.setDate(d.getDate()-(29-i));
+    return d.toISOString().split('T')[0];
+  });
+  const byDate = Object.fromEntries(st.records.map(r=>[r.dateISO||r.date, r]));
+  const netSeries = days.map(d => byDate[d] ? (byDate[d].net||0) : 0);
+  const totalSeries = days.map(d => byDate[d] ? (byDate[d].total||0) : 0);
+
+  // KPIs
+  const todayRec = byDate[todayISO()];
+  const yesterdayRec = byDate[isoOffset(1)];
+  const last7 = days.slice(-7).map(d=>byDate[d]).filter(Boolean);
+  const last30 = days.map(d=>byDate[d]).filter(Boolean);
+  const prev7 = days.slice(-14,-7).map(d=>byDate[d]).filter(Boolean);
+  const net7 = last7.reduce((s,r)=>s+(r.net||0),0);
+  const net30 = last30.reduce((s,r)=>s+(r.net||0),0);
+  const netPrev7 = prev7.reduce((s,r)=>s+(r.net||0),0);
+  const wow = netPrev7 ? Math.round((net7-netPrev7)/Math.abs(netPrev7)*100) : 0;
+  const totalEntries = st.records.length;
+  const targetPct = Math.min(100, Math.round(net30 / Math.max(1,st.target) * 100));
+  const avgDay = last30.length ? Math.round(net30/last30.length) : 0;
+  const todayTotal = todayRec ? todayRec.total||0 : 0;
+  const totalUnits30 = last30.reduce((s,r)=>s+(r.total||0),0);
+  // Stock alert counts
+  const lowOutSet = new Set();
+  st.records.filter(r=>r.dateISO>=isoOffset(14)).forEach(r=>{
+    (r.leftItems||[]).forEach(s=>lowOutSet.add('l:'+s.replace(/\s*\(.+\)$/,'')));
+    (r.outItems||[]).forEach(s=>lowOutSet.add('o:'+s));
+  });
+  const stockAlerts = lowOutSet.size;
+  // Per-store pastel tones (matches accent hue family)
+  const tones = { nmtun:'oklch(78% 0.14 245)', pussorn:'oklch(78% 0.14 25)', khaow:'oklch(82% 0.15 75)' };
+  const tonePink = 'oklch(82% 0.10 350)';
+  const toneGreen = 'oklch(82% 0.12 155)';
+  const tonePurple = 'oklch(82% 0.10 290)';
+  const toneSky = 'oklch(82% 0.10 215)';
+
+  // Recent activity (across all stores)
+  const recent = STORE_IDS.flatMap(id => state.stores[id].records.map(r=>({...r, storeId:id})))
+    .sort((a,b)=>(b.ts||0)-(a.ts||0)).slice(0,7);
+
+  // Stock alerts list
+  const recentLow = {}, recentOut = {};
+  st.records.filter(r=>r.dateISO>=isoOffset(14)).forEach(r=>{
+    (r.leftItems||[]).forEach(s=>{ const n=s.replace(/\s*\(.+\)$/,''); recentLow[n]=(recentLow[n]||0)+1; });
+    (r.outItems||[]).forEach(n=>{ recentOut[n]=(recentOut[n]||0)+1; });
+  });
+  const lowList = Object.entries(recentLow).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const outList = Object.entries(recentOut).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  root.innerHTML = `
+    <div class="flex flex-col gap-5 max-w-[1480px]">
+      <!-- Greeting -->
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 class="text-[24px] md:text-[28px] font-extrabold leading-tight" style="letter-spacing:-.02em;">สวัสดี · ${def.badge} ${escHtml(def.name)}</h2>
+          <p class="text-[13.5px] muted mt-1">${fmtDateLong(todayISO())} · ภาพรวมยอดขายและสต็อก</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-ghost" onclick="switchView('history')"><i data-lucide="history"></i> ประวัติ</button>
+          <button class="btn btn-primary" onclick="switchView('entry')"><i data-lucide="pencil-line"></i> บันทึกยอด</button>
+        </div>
+      </div>
+
+      <!-- HERO: 4 pastel KPI cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        ${pastelKpi('ยอดวันนี้', todayRec?fmtMoney(todayRec.net):'—', todayRec?`${fmt(todayTotal)} ${def.salesUnit} · ${todayRec.recorder||'—'}`:'ยังไม่ได้บันทึก', tones[active], 'wallet')}
+        ${pastelKpi('7 วันล่าสุด', fmtMoney(net7), wow!==0?`${wow>0?'↑':'↓'} ${Math.abs(wow)}% เทียบสัปดาห์ก่อน`:`${last7.length} วันบันทึก`, tonePink, 'trending-up')}
+        ${pastelKpi('30 วัน', fmtMoney(net30), `เฉลี่ย ${fmtMoney(avgDay)}/วัน`, toneGreen, 'bar-chart-3')}
+        ${pastelKpi('เป้าเดือน', `${targetPct}%`, `${fmtMoney(net30)} / ${fmtMoney(st.target)}`, tonePurple, 'target', `<div class="mt-3 h-1.5 rounded-full bg-white/40 overflow-hidden"><div class="h-full transition-all" style="width:${targetPct}%;background:color-mix(in oklch, ${tonePurple} 85%, black);"></div></div>`)}
+      </div>
+
+      <!-- Ring stat row -->
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+        ${ringStat('ยอดรวม', fmt(totalUnits30), `${def.saleType==='units'?def.salesUnit:'เสิร์ฟ'} · 30 วัน`, Math.min(100, totalUnits30/Math.max(1,totalUnits30+200)*100), 'cup-soda')}
+        ${ringStat('วันที่บันทึก', fmt(last30.length)+'/30', 'อัตราบันทึก', last30.length/30*100, 'calendar-check')}
+        ${ringStat('รายการสต็อก', fmt(stockAlerts), stockAlerts?`ต้องจับตา · 14 วัน`:'ทุกอย่างปกติ', stockAlerts?Math.min(100, stockAlerts*10):0, 'package')}
+        ${ringStat('บันทึกทั้งหมด', fmt(totalEntries), `${st.records.filter(r=>r.synced).length} ส่งแล้ว`, totalEntries?st.records.filter(r=>r.synced).length/totalEntries*100:0, 'database')}
+      </div>
+
+      <!-- Main chart card -->
+      <div class="card p-5">
+        <div class="flex items-start justify-between flex-wrap gap-3 mb-4">
+          <div>
+            <div class="text-[15px] font-semibold">ยอดสุทธิ 30 วันล่าสุด</div>
+            <div class="text-[12.5px] muted mt-0.5">เส้น = สุทธิ · แท่ง = ${def.saleType==='units'?'จำนวนแก้ว':'จำนวนเสิร์ฟ'}</div>
+          </div>
+          <div class="flex gap-2 text-[12px]">
+            <span class="pill"><span class="dot inline-block w-2 h-2 rounded-full mr-1" style="background:var(--accent)"></span>สุทธิ</span>
+            <span class="pill"><span class="dot inline-block w-2 h-2 rounded-full mr-1" style="background:color-mix(in oklch, var(--accent) 35%, transparent)"></span>${def.saleType==='units'?'แก้ว':'เสิร์ฟ'}</span>
+          </div>
+        </div>
+        <div style="height:260px"><canvas id="chart_main"></canvas></div>
+      </div>
+
+      <!-- 2-col -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <!-- Recent activity -->
+        <div class="card p-5 lg:col-span-2">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-[15px] font-semibold">กิจกรรมล่าสุด</div>
+            <button class="text-[12px] muted hover:underline" onclick="switchView('history')">ดูทั้งหมด →</button>
+          </div>
+          <div class="flex flex-col">
+            ${recent.length===0 ? '<div class="muted text-[13px] py-6 text-center">ยังไม่มีบันทึก</div>' :
+              recent.map(r => {
+                const d = STORE_DEFS[r.storeId];
+                return `<div class="flex items-center gap-3 py-2.5 border-b hairline last:border-0">
+                  <div class="w-8 h-8 rounded-lg flex items-center justify-center text-base" style="background:oklch(95% 0.04 ${d.accentHue});">${d.badge}</div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <span class="font-semibold text-[13.5px] truncate">${escHtml(d.name)}</span>
+                      ${r.synced?'<span class="pill pill-pos" style="padding:1px 7px;font-size:10.5px;">synced</span>':'<span class="pill pill-warn" style="padding:1px 7px;font-size:10.5px;">รอส่ง</span>'}
+                    </div>
+                    <div class="text-[12px] muted">${fmtDate(r.dateISO||r.date)} · ${r.recorder||'—'} · ${fmt(r.total)} ${d.salesUnit}</div>
+                  </div>
+                  <div class="text-right num">
+                    <div class="font-semibold text-[14.5px] ${r.net>=0?'':'text-[color:var(--neg)]'}">${fmtMoney(r.net)}</div>
+                  </div>
+                </div>`;
+              }).join('')
+            }
+          </div>
+        </div>
+        <!-- Stock alerts -->
+        <div class="card p-5">
+          <div class="text-[15px] font-semibold mb-3">แจ้งเตือนสต็อก <span class="muted text-[12px] font-normal">· 14 วัน</span></div>
+          ${outList.length===0 && lowList.length===0 ? '<div class="muted text-[13px] py-4 text-center">ทุกอย่างปกติ ✨</div>' : ''}
+          ${outList.length ? `<div class="text-[11px] font-semibold muted-2 tracking-widest mb-2">หมดบ่อย</div>
+            <div class="flex flex-col gap-1.5 mb-3">${outList.map(([n,c])=>`<div class="flex items-center justify-between text-[13px]">
+              <span class="truncate">${escHtml(n)}</span>
+              <span class="pill pill-neg">${c}×</span></div>`).join('')}</div>`:''}
+          ${lowList.length ? `<div class="text-[11px] font-semibold muted-2 tracking-widest mb-2">เหลือบ่อย</div>
+            <div class="flex flex-col gap-1.5">${lowList.map(([n,c])=>`<div class="flex items-center justify-between text-[13px]">
+              <span class="truncate">${escHtml(n)}</span>
+              <span class="pill pill-warn">${c}×</span></div>`).join('')}</div>`:''}
+          <button class="btn btn-ghost w-full mt-4 text-[12px]" onclick="switchView('stock')"><i data-lucide="arrow-right"></i> ดูสต็อกทั้งหมด</button>
+        </div>
+      </div>
+
+      <!-- All-stores comparison -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="text-[15px] font-semibold">เปรียบเทียบทั้ง 3 ร้าน <span class="muted text-[12px] font-normal">· 30 วัน</span></div>
+            <div class="text-[12.5px] muted mt-0.5">สลับร้านได้ที่แถบด้านซ้าย</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          ${allStores.map(({id,def,state:ss}) => {
+            const dates30 = days.slice();
+            const byD = Object.fromEntries(ss.records.map(r=>[r.dateISO||r.date, r]));
+            const ser = dates30.map(d => byD[d]?byD[d].net||0:0);
+            const sum = ser.reduce((s,v)=>s+v,0);
+            const tx = ser.filter(v=>v).length;
+            const pct = Math.min(100, Math.round(sum/Math.max(1,ss.target)*100));
+            const isActive = id===active;
+            return `<button class="card-flat p-4 text-left transition-all hover:shadow-md" onclick="switchStore('${id}')" style="${isActive?`border-color:oklch(${state.theme==='dark'?72:60}% 0.16 ${def.accentHue});box-shadow:0 0 0 1px oklch(${state.theme==='dark'?72:60}% 0.16 ${def.accentHue}) inset;`:''}">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-lg">${def.badge}</span>
+                  <span class="font-semibold text-[14px]">${escHtml(def.name)}</span>
+                </div>
+                ${isActive?'<i data-lucide="circle-dot" style="color:oklch('+(state.theme==='dark'?72:60)+'% 0.16 '+def.accentHue+')"></i>':''}
+              </div>
+              <div class="text-[22px] font-bold num">${fmtMoney(sum)}</div>
+              <div class="text-[11.5px] muted mb-2">${tx} วัน · เป้า ${fmtMoney(ss.target)} (${pct}%)</div>
+              <canvas data-spark="${id}" class="spark"></canvas>
+            </button>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Charts
+  setTimeout(()=>{
+    drawMainChart(days, netSeries, totalSeries, def);
+    allStores.forEach(({id, def:d, state:ss}) => {
+      const c = document.querySelector(`canvas[data-spark="${id}"]`);
+      if(c) drawSpark(c, days.map(dd=>{ const r=ss.records.find(r=>(r.dateISO||r.date)===dd); return r?r.net||0:0; }), d.accentHue);
+    });
+  },10);
+}
+
+function kpiCard(label, value, sub, kind, icon, extra=''){
+  const cls = kind==='pos'?'text-[color:var(--pos)]':kind==='neg'?'text-[color:var(--neg)]':'';
+  return `<div class="card p-4">
+    <div class="flex items-center justify-between mb-1.5">
+      <div class="text-[12px] muted font-medium">${label}</div>
+      <i data-lucide="${icon}" class="muted-2" style="width:14px;height:14px"></i>
+    </div>
+    <div class="text-[22px] font-bold num ${cls}">${value}</div>
+    <div class="text-[11.5px] muted mt-0.5">${sub}</div>
+    ${extra}
+  </div>`;
+}
+
+function pastelKpi(label, value, sub, tone, icon, extra=''){
+  return `<div class="pkpi" style="--p-tone:${tone};">
+    <div class="pkpi-eyebrow">${label}</div>
+    <div class="text-[28px] md:text-[30px] font-extrabold num mt-2.5" style="letter-spacing:-.02em;color:color-mix(in oklch, ${tone} 85%, black);">${value}</div>
+    <div class="text-[12px] mt-1 font-medium" style="color:color-mix(in oklch, ${tone} 60%, black);opacity:.85;">${sub}</div>
+    ${extra}
+    <div class="pkpi-ic"><i data-lucide="${icon}"></i></div>
+  </div>`;
+}
+
+function ringStat(label, value, sub, pct, icon){
+  pct = Math.max(0, Math.min(100, pct||0));
+  const r = 28, C = 2*Math.PI*r;
+  const off = C * (1 - pct/100);
+  return `<div class="ring-card">
+    <div class="min-w-0 flex-1">
+      <div class="text-[12px] muted font-medium">${label}</div>
+      <div class="text-[24px] font-extrabold num mt-1" style="letter-spacing:-.015em;">${value}</div>
+      <div class="text-[11.5px] muted-2 mt-0.5 truncate">${sub}</div>
+    </div>
+    <svg class="ring-svg" viewBox="0 0 64 64">
+      <defs>
+        <linearGradient id="rg-${icon}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="var(--accent)"/>
+          <stop offset="100%" stop-color="color-mix(in oklch, var(--accent) 60%, oklch(80% 0.18 320))"/>
+        </linearGradient>
+      </defs>
+      <circle class="ring-bg" cx="32" cy="32" r="${r}" fill="none" stroke-width="5"/>
+      <circle cx="32" cy="32" r="${r}" fill="none" stroke="url(#rg-${icon})" stroke-width="5" stroke-linecap="round"
+        stroke-dasharray="${C}" stroke-dashoffset="${off}" transform="rotate(-90 32 32)"/>
+      <foreignObject x="20" y="20" width="24" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:var(--accent);"><i data-lucide="${icon}" style="width:16px;height:16px"></i></div></foreignObject>
+    </svg>
+  </div>`;
+}
+
+let chartMain;
+function drawMainChart(days, netSeries, totalSeries, def){
+  const ctx = document.getElementById('chart_main');
+  if(!ctx) return;
+  if(chartMain) chartMain.destroy();
+  const cs = getComputedStyle(document.documentElement);
+  const accent = cs.getPropertyValue('--accent').trim();
+  const accentSoft = cs.getPropertyValue('--accent-soft').trim();
+  const text2 = cs.getPropertyValue('--text-2').trim();
+  const border = cs.getPropertyValue('--border').trim();
+
+  chartMain = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: days.map(d=>fmtDate(d).slice(0,5)),
+      datasets: [
+        { type:'bar', label: def.saleType==='units'?'แก้ว':'เสิร์ฟ', data: totalSeries, backgroundColor: accentSoft, borderColor:'transparent', borderRadius:6, yAxisID:'y2', barPercentage:.55, categoryPercentage:.78 },
+        { type:'line', label:'สุทธิ', data: netSeries, borderColor: accent, backgroundColor:'transparent', borderWidth:2.5, tension:.38, pointRadius:0, pointHoverRadius:6, pointHoverBackgroundColor:accent, pointHoverBorderColor:'#fff', pointHoverBorderWidth:2, yAxisID:'y' }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(15,15,15,.95)', padding:11, cornerRadius:10, displayColors:true,
+          titleFont:{family:'Sarabun',weight:'600',size:12}, bodyFont:{family:'Sarabun',size:12},
+          callbacks:{ label: ctx => ` ${ctx.dataset.label}: ${ctx.dataset.yAxisID==='y'?fmtMoney(ctx.parsed.y):fmt(ctx.parsed.y)}` }
+        }
+      },
+      scales:{
+        x:{ grid:{display:false,drawBorder:false}, ticks:{ color:text2, font:{family:'Sarabun',size:10.5}, maxRotation:0, autoSkipPadding:20 } },
+        y:{ position:'left', beginAtZero:true, grid:{color:border, drawBorder:false}, ticks:{ color:text2, font:{family:'Sarabun',size:10.5}, maxTicksLimit:5, callback:v=> v>=1000?'฿'+(v/1000).toFixed(0)+'k':'฿'+v } },
+        y2:{ position:'right', beginAtZero:true, grid:{display:false,drawBorder:false}, ticks:{ color:text2, font:{family:'Sarabun',size:10.5}, maxTicksLimit:5 } }
+      }
+    }
+  });
+}
+
+function drawSpark(canvas, data, hue){
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth * 2;
+  const h = canvas.height = 46 * 2;
+  canvas.style.height='46px';
+  ctx.scale(1,1);
+  const max = Math.max(1, ...data.map(d=>Math.abs(d)));
+  const dark = state.theme==='dark';
+  const accent = `oklch(${dark?72:60}% 0.16 ${hue})`;
+  const accSoft = `oklch(${dark?72:60}% 0.16 ${hue} / .18)`;
+  // Area path
+  ctx.beginPath();
+  data.forEach((v,i)=>{
+    const x = i/(data.length-1) * w;
+    const y = h - (v/max)*0.85*h - h*0.075;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+  ctx.fillStyle = accSoft;
+  ctx.fill();
+  // Line
+  ctx.beginPath();
+  data.forEach((v,i)=>{
+    const x = i/(data.length-1) * w;
+    const y = h - (v/max)*0.85*h - h*0.075;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 3.5;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.stroke();
+}
+</script>
+
+<!-- ============================================================== -->
+<!-- VIEW: ENTRY (บันทึกยอดขาย)                                       -->
+<!-- ============================================================== -->
+<script>
+function renderEntry(root){
+  const id = state.activeStore;
+  const def = STORE_DEFS[id];
+  const st = state.stores[id];
+  const D = state.formDraft;
+
+  // Initialize draft date if empty
+  if(!D.date){ D.date = todayISO(); }
+
+  // Group fields by section for nmtun (cash/units), else (sale/cost/boxegg)
+  const saleGroups = {};
+  st.sale.forEach(f => { const s=f.section||'sale'; (saleGroups[s]=saleGroups[s]||[]).push(f); });
+
+  const html = `
+    <div class="max-w-[920px] flex flex-col gap-4">
+
+      <!-- Basic info -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <i data-lucide="calendar"></i>
+            <span class="font-semibold text-[14.5px]">ข้อมูลพื้นฐาน</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          ${st.basic.map(f => fieldEl(f, D[f.key])).join('')}
+        </div>
+      </div>
+
+      ${def.saleType==='units' ? renderCashSection(st, D, def) : renderSaleSection(st, D, def, saleGroups)}
+      ${def.saleType==='units' ? renderUnitsSection(st, D, def, saleGroups) : ''}
+      ${st.cost.length ? renderCostSection(st, D) : ''}
+      ${def.hasBoxEgg ? renderBoxEggSection(st, D) : ''}
+
+      <!-- Stock -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <i data-lucide="package"></i>
+            <span class="font-semibold text-[14.5px]">สถานะสต็อก</span>
+          </div>
+          <div class="flex gap-2 text-[11.5px]">
+            <span class="inline-flex items-center gap-1.5 muted"><span class="inline-block w-2 h-2 rounded-full" style="background:var(--text-3)"></span>ปกติ</span>
+            <span class="inline-flex items-center gap-1.5 muted"><span class="inline-block w-2 h-2 rounded-full" style="background:oklch(70% 0.16 75)"></span>เหลือ</span>
+            <span class="inline-flex items-center gap-1.5 muted"><span class="inline-block w-2 h-2 rounded-full" style="background:oklch(60% 0.20 25)"></span>หมด</span>
+          </div>
+        </div>
+        <div class="text-[11.5px] muted mb-3">คลิก 1× = เหลือ (กรอกจำนวน) · คลิก 2× = หมด · คลิก 3× = ปกติ</div>
+        <div id="inv_area"></div>
+      </div>
+
+      <!-- Note -->
+      <div class="card p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <i data-lucide="message-square-text"></i>
+          <span class="font-semibold text-[14.5px]">หมายเหตุ</span>
+        </div>
+        <textarea id="inp_note" class="inp" rows="2" placeholder="ข้อมูลเพิ่มเติม...">${escHtml(D.note||'')}</textarea>
+      </div>
+
+      <!-- Net summary + Save -->
+      <div class="card p-5" style="background:var(--accent-soft);border-color:color-mix(in oklch, var(--accent) 30%, transparent);">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <div class="text-[11.5px] font-semibold tracking-widest muted-2">เงินสดสุทธิ</div>
+            <div id="net_val" class="text-[28px] font-extrabold num text-accent-ink">฿0</div>
+          </div>
+          <div>
+            <div class="text-[11.5px] font-semibold tracking-widest muted-2">ยอด${def.saleType==='units'?'รวมแก้ว':'เสิร์ฟ'}</div>
+            <div id="total_val" class="text-[28px] font-extrabold num text-accent-ink">0 ${def.salesUnit}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-2 sticky bottom-4">
+        <button class="btn btn-primary flex-1" onclick="saveEntry()" id="save_btn"><i data-lucide="check-circle-2"></i> บันทึก + ส่ง LINE & Sheets</button>
+        <button class="btn btn-ghost" onclick="clearForm()"><i data-lucide="rotate-ccw"></i> ล้าง</button>
+      </div>
+    </div>
+  `;
+  root.innerHTML = html;
+
+  // Bind inputs
+  bindEntryInputs();
+  // Render dynamic costs if applicable
+  if(def.hasDynCosts){ renderDynCosts(); }
+  renderInventoryArea();
+  recalcEntry();
+}
+
+function fieldEl(f, val){
+  const isDate = f.type==='date';
+  const v = val ?? (isDate ? todayISO() : '');
+  return `<div class="flex flex-col gap-1.5">
+    <label class="lbl">${escHtml(f.label)}${f.req?'<span class="req">*</span>':''}${f.sub?`<span class="sub">${escHtml(f.sub)}</span>`:''}</label>
+    <input class="inp" type="${f.type}" id="inp_${f.id}" data-key="${f.key}" placeholder="${escHtml(f.ph||'')}" value="${escHtml(v)}" ${f.req?'required':''} ${f.type==='number'?'min="0" inputmode="decimal"':''}>
+  </div>`;
+}
+
+function renderCashSection(st, D, def){
+  const cashFlds = st.sale.filter(f=>f.section==='cash');
+  return `<div class="card p-5">
+    <div class="flex items-center gap-2 mb-3">
+      <i data-lucide="banknote"></i>
+      <span class="font-semibold text-[14.5px]">เงินสด</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+      ${cashFlds.map(f=>fieldEl(f, D[f.key])).join('')}
+    </div>
+    ${def.hasDynCosts ? `
+      <div class="border-t hairline pt-3 mt-3">
+        <div class="text-[12.5px] font-semibold muted mb-2">💸 ค่าใช้จ่ายอื่นๆ (ระบุรายการ)</div>
+        <div id="dyn_costs" class="flex flex-col gap-2 mb-2"></div>
+        <button class="btn btn-soft text-[12.5px]" onclick="addDynCost()"><i data-lucide="plus"></i> เพิ่มรายการ</button>
+      </div>
+    `:''}
+  </div>`;
+}
+
+function renderSaleSection(st, D, def, groups){
+  const fields = st.sale.filter(f=>!f.section || f.section==='sale');
+  return `<div class="card p-5">
+    <div class="flex items-center gap-2 mb-3">
+      <i data-lucide="trending-up"></i>
+      <span class="font-semibold text-[14.5px]">ยอดขาย</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      ${fields.map(f => {
+        const tag = f.role==='plus' ? `<span class="pill pill-pos" style="font-size:10px;padding:1px 6px;">+</span>` :
+                    f.role==='minus' ? `<span class="pill pill-neg" style="font-size:10px;padding:1px 6px;">−</span>` : '';
+        return `<div class="flex flex-col gap-1.5">
+          <label class="lbl">${escHtml(f.label)} ${tag}${f.req?'<span class="req">*</span>':''}${f.sub?`<span class="sub">${escHtml(f.sub)}</span>`:''}</label>
+          <input class="inp" type="number" min="0" inputmode="decimal" id="inp_${f.id}" data-key="${f.key}" placeholder="${escHtml(f.ph||'0')}" value="${escHtml(D[f.key]||'')}" ${f.req?'required':''}>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function renderUnitsSection(st, D, def, groups){
+  const fields = st.sale.filter(f=>f.section==='units');
+  return `<div class="card p-5">
+    <div class="flex items-center gap-2 mb-3">
+      <i data-lucide="cup-soda"></i>
+      <span class="font-semibold text-[14.5px]">ยอดขาย</span>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      ${fields.map(f => `<div class="flex flex-col gap-1.5">
+        <label class="lbl">${escHtml(f.label)}${f.sub?`<span class="sub">${escHtml(f.sub)}</span>`:''}</label>
+        <input class="inp" type="number" min="0" inputmode="decimal" id="inp_${f.id}" data-key="${f.key}" placeholder="0" value="${escHtml(D[f.key]||'')}">
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderCostSection(st, D){
+  return `<div class="card p-5">
+    <div class="flex items-center gap-2 mb-3">
+      <i data-lucide="minus-circle"></i>
+      <span class="font-semibold text-[14.5px]">ค่าใช้จ่าย</span>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      ${st.cost.map(f => `<div class="flex flex-col gap-1.5">
+        <label class="lbl">${escHtml(f.label)}</label>
+        <input class="inp" type="number" min="0" inputmode="decimal" id="inp_${f.id}" data-key="${f.key}" placeholder="0" value="${escHtml(D[f.key]||'')}">
+      </div>`).join('')}
+    </div>
+    <div class="mt-3">
+      <label class="lbl">รายละเอียดค่าใช้จ่าย <span class="sub">(ไม่บังคับ)</span></label>
+      <input class="inp mt-1" id="inp_cost_detail" placeholder="เช่น ค่าถุง 50, น้ำแข็ง 40" value="${escHtml(D.costDetails||'')}">
+    </div>
+  </div>`;
+}
+
+function renderBoxEggSection(st, D){
+  return `<div class="card p-5">
+    <div class="flex items-center gap-2 mb-3">
+      <i data-lucide="boxes"></i>
+      <span class="font-semibold text-[14.5px]">กล่อง / ไข่ — ต้นวัน · ปลายวัน</span>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      ${st.boxegg.map(f => `<div class="flex flex-col gap-1.5">
+        <label class="lbl">${escHtml(f.label)}</label>
+        <input class="inp" type="number" min="0" inputmode="decimal" id="inp_${f.id}" data-key="${f.key}" placeholder="0" value="${escHtml(D[f.key]||'')}">
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function bindEntryInputs(){
+  document.querySelectorAll('#view input.inp, #view textarea.inp').forEach(el => {
+    el.addEventListener('input', e=>{
+      const key = el.dataset.key || (el.id==='inp_note'?'note':el.id==='inp_cost_detail'?'costDetails':null);
+      if(!key) return;
+      const v = el.type==='number' ? el.value : el.value;
+      state.formDraft[key] = v;
+      recalcEntry();
+    });
+  });
+}
+
+function renderDynCosts(){
+  const el = document.getElementById('dyn_costs');
+  if(!el) return;
+  el.innerHTML = state.dynCosts.map((c,i)=>`
+    <div class="flex gap-2">
+      <input class="inp" style="flex:1;max-width:140px;" type="number" min="0" placeholder="฿ จำนวน" value="${escHtml(c.amt||'')}" oninput="state.dynCosts[${i}].amt=this.value;recalcEntry()">
+      <input class="inp" style="flex:3;" placeholder="รายละเอียด เช่น ทิชชู่" value="${escHtml(c.desc||'')}" oninput="state.dynCosts[${i}].desc=this.value">
+      <button class="btn btn-icon" onclick="state.dynCosts.splice(${i},1);renderDynCosts();recalcEntry()"><i data-lucide="x"></i></button>
+    </div>
+  `).join('');
+  lucide.createIcons({nodes: el.querySelectorAll('[data-lucide]')});
+}
+function addDynCost(){ state.dynCosts.push({amt:'',desc:''}); renderDynCosts(); }
+
+function renderInventoryArea(){
+  const el = document.getElementById('inv_area');
+  if(!el) return;
+  const st = state.stores[state.activeStore];
+  el.innerHTML = st.catalog.map((sec,ci) => `
+    <div class="mb-4 last:mb-0">
+      <div class="text-[11px] font-semibold muted-2 tracking-widest mb-2">${escHtml(sec.cat)}</div>
+      <div class="flex flex-wrap gap-1.5">
+        ${sec.items.map(name => {
+          const s = state.invState[name]||'normal';
+          const note = state.invNotes[name]||'';
+          return `<button type="button" class="ic-chip ${s==='low'?'low':s==='out'?'out':''}" onclick="cycleInvState('${escHtml(name).replace(/'/g,"\\'")}')">
+            <span class="dot"></span>
+            <span>${escHtml(name)}</span>
+            ${s==='low'?`<input class="ic-qty" placeholder="จำนวน" value="${escHtml(note)}" onclick="event.stopPropagation()" oninput="state.invNotes['${escHtml(name).replace(/'/g,"\\'")}']=this.value">`:''}
+          </button>`;
+        }).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function recalcEntry(){
+  const D = state.formDraft;
+  // collect all current values from DOM
+  const id = state.activeStore;
+  const def = STORE_DEFS[id];
+  const st = state.stores[id];
+  const values = {};
+  [...st.basic, ...st.sale, ...st.cost, ...(def.hasBoxEgg?st.boxegg:[])].forEach(f => {
+    const el = document.getElementById('inp_'+f.id);
+    if(el){ values[f.key] = el.value; D[f.key] = el.value; }
+  });
+  const net = computeNet(id, values, state.dynCosts);
+  const total = computeTotal(id, values);
+  const ne = document.getElementById('net_val');
+  const te = document.getElementById('total_val');
+  if(ne){
+    ne.textContent = fmtMoney(net);
+    ne.style.color = net<0 ? 'var(--neg)' : 'var(--accent-ink)';
+  }
+  if(te){
+    te.textContent = def.saleType==='units' ? `${fmt(total)} ${def.salesUnit}` : `${fmt(total)} เสิร์ฟ`;
+  }
+}
+
+async function saveEntry(){
+  const id = state.activeStore;
+  const def = STORE_DEFS[id];
+  const st = state.stores[id];
+  const D = state.formDraft;
+  // Collect
+  const values = {};
+  [...st.basic, ...st.sale, ...st.cost, ...(def.hasBoxEgg?st.boxegg:[])].forEach(f => {
+    const el = document.getElementById('inp_'+f.id);
+    if(el){
+      values[f.key] = el.type==='number' ? (parseFloat(el.value)||0) : el.value.trim();
+    }
+  });
+  const noteEl = document.getElementById('inp_note'); if(noteEl) values.note = noteEl.value.trim();
+  const cdEl = document.getElementById('inp_cost_detail'); if(cdEl) values.costDetails = cdEl.value.trim();
+  if(!values.date){ toast('กรุณาเลือกวันที่','er'); return; }
+  // Required check
+  for(const f of [...st.basic, ...st.sale]){
+    if(f.req && (!values[f.key] && values[f.key]!==0)){ toast(`กรอก ${f.label}`,'er'); return; }
+  }
+  const dateISO = values.date;
+  const inv = getInventorySummary();
+  const rec = {
+    ...values,
+    dateISO,
+    costsDyn: def.hasDynCosts ? state.dynCosts.filter(c=>c.amt||c.desc).map(c=>({amt:+c.amt||0, desc:c.desc||''})) : undefined,
+    leftItems: inv.leftItems,
+    outItems: inv.outItems,
+    net: computeNet(id, values, state.dynCosts),
+    total: computeTotal(id, values),
+    ts: Date.now(),
+    synced: false
+  };
+
+  // Upsert by dateISO
+  const ei = st.records.findIndex(r => (r.dateISO||r.date) === dateISO);
+  if(ei>=0){
+    if(!confirm(`มีข้อมูลของวันที่ ${fmtDate(dateISO)} อยู่แล้ว — ทับใหม่?`)) return;
+    rec.ts = st.records[ei].ts;
+    st.records[ei] = rec;
+  } else {
+    st.records.push(rec);
+  }
+  st.records.sort((a,b)=>(a.dateISO||a.date).localeCompare(b.dateISO||b.date));
+  LS.set(k(id,'records'), st.records);
+
+  // Submit
+  if(st.hook){
+    toast('⏳ กำลังส่ง LINE & Sheets...','in');
+    const r = await postWebhook(id, rec);
+    if(r.ok){
+      rec.synced = true;
+      LS.set(k(id,'records'), st.records);
+      toast('✅ บันทึก + ส่งสำเร็จ','ok');
+    } else {
+      toast('💾 บันทึกแล้ว · ส่งไม่ได้ (กด ส่งซ้ำในประวัติ)','er');
+    }
+  } else {
+    toast('💾 บันทึกแล้ว · ยังไม่ได้ตั้งค่าเชื่อมต่อ','in');
+  }
+  clearForm();
+}
+
+function clearForm(){
+  state.formDraft = { date: todayISO() };
+  state.dynCosts = [];
+  resetInventory();
+  renderView();
+}
+</script>
+
+<!-- ============================================================== -->
+<!-- VIEW: HISTORY (ประวัติ)                                          -->
+<!-- ============================================================== -->
+<script>
+function renderHistory(root){
+  const id = state.activeStore;
+  const def = STORE_DEFS[id];
+  const st = state.stores[id];
+  const records = [...st.records].reverse(); // newest first
+  const q = (state.search||'').toLowerCase();
+  const filtered = q ? records.filter(r => {
+    return JSON.stringify(r).toLowerCase().includes(q);
+  }) : records;
+  const synced = st.records.filter(r=>r.synced).length;
+  const pending = st.records.length - synced;
+  const totalNet = st.records.reduce((s,r)=>s+(r.net||0),0);
+  const totalTx = st.records.reduce((s,r)=>s+(r.total||0),0);
+
+  root.innerHTML = `
+    <div class="flex flex-col gap-4 max-w-[1400px]">
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div class="flex flex-wrap gap-2">
+          <span class="pill"><b class="num">${fmt(st.records.length)}</b>&nbsp;วันบันทึก</span>
+          <span class="pill pill-pos"><b class="num">${fmtMoney(totalNet)}</b>&nbsp;รวมสุทธิ</span>
+          <span class="pill pill-accent"><b class="num">${fmt(totalTx)}</b>&nbsp;${def.salesUnit==='฿'?'เสิร์ฟ':def.salesUnit}</span>
+          ${pending?`<span class="pill pill-warn">${pending} รอส่ง</span>`:''}
+          ${synced?`<span class="pill pill-pos" style="opacity:.8">${synced} ส่งแล้ว</span>`:''}
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <div class="relative">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 muted-2" style="width:14px;height:14px"></i>
+            <input class="inp pl-8" placeholder="ค้นหา..." value="${escHtml(state.search||'')}" oninput="state.search=this.value;renderView()" style="width:220px;">
+          </div>
+          ${pending && st.hook ? `<button class="btn btn-soft" onclick="syncAll('${id}')"><i data-lucide="upload-cloud"></i> ส่งทั้งหมด</button>`:''}
+          <details class="relative">
+            <summary class="btn btn-ghost"><i data-lucide="download"></i> ส่งออก <i data-lucide="chevron-down"></i></summary>
+            <div class="absolute right-0 top-full mt-1 card p-1 z-10 min-w-[160px]" style="box-shadow:var(--shadow-pop)">
+              <button class="nav-item w-full" onclick="exportData('${id}','tsv')"><i data-lucide="clipboard-copy"></i> TSV (Sheets)</button>
+              <button class="nav-item w-full" onclick="exportData('${id}','csv')"><i data-lucide="file-text"></i> CSV</button>
+              <button class="nav-item w-full" onclick="exportData('${id}','json')"><i data-lucide="braces"></i> JSON</button>
+            </div>
+          </details>
+          <button class="btn btn-danger" onclick="clearAllRecords('${id}')"><i data-lucide="trash-2"></i></button>
+        </div>
+      </div>
+
+      <div class="card overflow-hidden">
+        <div class="scroll-x">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>วันที่</th>
+                <th>ผู้บันทึก</th>
+                <th class="text-right">สุทธิ</th>
+                <th class="text-right">${def.saleType==='units'?'แก้ว':'เสิร์ฟ'}</th>
+                ${def.saleType==='units' ? `<th class="text-right">เย็น/ร้อน</th>` : ''}
+                <th>เหลือ / หมด</th>
+                <th>หมายเหตุ</th>
+                <th class="text-center">สถานะ</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+            ${filtered.length===0 ? `<tr><td colspan="9" class="text-center muted py-10">${q?'ไม่พบผลลัพธ์':'ยังไม่มีบันทึก'}</td></tr>` :
+              filtered.map((r, idxR) => {
+                const realIdx = st.records.findIndex(x => x.ts === r.ts);
+                const left = (r.leftItems||[]).slice(0,3);
+                const out = (r.outItems||[]).slice(0,3);
+                return `<tr>
+                  <td><div class="font-semibold">${fmtDate(r.dateISO||r.date)}</div><div class="text-[11px] muted-2">${r.dateISO||r.date}</div></td>
+                  <td class="muted">${escHtml(r.recorder||'—')}</td>
+                  <td class="text-right num font-semibold ${r.net<0?'text-[color:var(--neg)]':''}">${fmtMoney(r.net)}</td>
+                  <td class="text-right num">${fmt(r.total)}</td>
+                  ${def.saleType==='units' ? `<td class="text-right num text-[12px] muted">${fmt(r.cold||0)} / ${fmt((r.hotG||0)+(r.hotB||0))}${r.hotB?` (${r.hotB}ถุง)`:''}</td>`:''}
+                  <td><div class="flex flex-wrap gap-1">
+                    ${left.map(t=>`<span class="pill pill-warn">${escHtml(t)}</span>`).join('')}
+                    ${out.map(t=>`<span class="pill pill-neg">${escHtml(t)}</span>`).join('')}
+                    ${(r.leftItems||[]).length+ (r.outItems||[]).length > 3 ? `<span class="muted-2 text-[11px]">+${(r.leftItems||[]).length+(r.outItems||[]).length-3}</span>`:''}
+                    ${(r.leftItems||[]).length+(r.outItems||[]).length===0?'<span class="muted-2 text-[12px]">—</span>':''}
+                  </div></td>
+                  <td class="muted text-[12px]" style="max-width:200px">${escHtml(r.note||'—')}</td>
+                  <td class="text-center">
+                    ${r.synced ? '<span class="pill pill-pos">synced</span>' : '<span class="pill pill-warn">รอส่ง</span>'}
+                  </td>
+                  <td class="text-right whitespace-nowrap">
+                    <button class="btn btn-icon" onclick="syncRecord('${id}',${realIdx},this)" title="ส่ง"><i data-lucide="${r.synced?'refresh-cw':'upload'}"></i></button>
+                    <button class="btn btn-icon" onclick="editRecord('${id}',${realIdx})" title="แก้ไข"><i data-lucide="edit-3"></i></button>
+                    <button class="btn btn-icon" onclick="deleteRecord('${id}',${realIdx})" title="ลบ"><i data-lucide="trash-2"></i></button>
+                  </td>
+                </tr>`;
+              }).join('')
+            }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function editRecord(id, idx){
+  const st = state.stores[id];
+  const r = st.records[idx];
+  if(!r) return;
+  state.formDraft = {...r};
+  state.dynCosts = r.costsDyn ? deepCopy(r.costsDyn) : [];
+  state.invState = {}; state.invNotes = {};
+  (r.leftItems||[]).forEach(s=>{
+    const m = s.match(/^(.+?)\s*\((.+)\)$/);
+    const n = m ? m[1].trim() : s.trim();
+    state.invState[n] = 'low';
+    if(m) state.invNotes[n] = m[2];
+  });
+  (r.outItems||[]).forEach(n => { state.invState[n.trim()] = 'out'; });
+  switchView('entry');
+}
+
+function deleteRecord(id, idx){
+  if(!confirm('ลบข้อมูลวันนี้?')) return;
+  const st = state.stores[id];
+  st.records.splice(idx,1);
+  LS.set(k(id,'records'), st.records);
+  reloadStore(id);
+  renderView();
+  toast('🗑 ลบแล้ว','in');
+}
+function clearAllRecords(id){
+  if(!confirm('ลบข้อมูลทั้งหมดของร้านนี้?')) return;
+  state.stores[id].records = [];
+  LS.set(k(id,'records'), []);
+  renderView();
+  toast('ล้างประวัติแล้ว','in');
+}
+
+function exportData(id, kind){
+  const st = state.stores[id];
+  const def = STORE_DEFS[id];
+  if(st.records.length===0){ toast('ไม่มีข้อมูล','er'); return; }
+  const flatRecs = st.records.map(r => buildPayload(id, r));
+  if(kind==='json'){
+    download(`${def.id}-${todayISO()}.json`, JSON.stringify({store:def.id, records:st.records, exported:new Date().toISOString()}, null, 2), 'application/json');
+  } else {
+    const keys = Array.from(new Set(flatRecs.flatMap(r=>Object.keys(r))));
+    const lines = [keys.join(kind==='csv'?',':'\t')];
+    flatRecs.forEach(r => {
+      lines.push(keys.map(k => {
+        let v = r[k] ?? '';
+        v = String(v).replace(/\n/g,' ');
+        if(kind==='csv' && /[,"\n]/.test(v)) v = '"'+v.replace(/"/g,'""')+'"';
+        return v;
+      }).join(kind==='csv'?',':'\t'));
+    });
+    const content = lines.join('\n');
+    if(kind==='tsv'){
+      navigator.clipboard.writeText(content).then(()=>toast('คัดลอก TSV แล้ว — ไปวางใน Google Sheets','ok'), ()=>toast('คัดลอกไม่ได้','er'));
+    } else {
+      download(`${def.id}-${todayISO()}.csv`, content, 'text/csv');
+    }
+  }
+}
+function download(name, content, mime){
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+}
+</script>
+
+<!-- ============================================================== -->
+<!-- VIEW: STOCK                                                     -->
+<!-- ============================================================== -->
+<script>
+function renderStock(root){
+  const id = state.activeStore;
+  const def = STORE_DEFS[id];
+  const st = state.stores[id];
+
+  // Tally across all records
+  const counts = {};
+  st.records.forEach(r => {
+    (r.leftItems||[]).forEach(s => {
+      const m = s.match(/^(.+?)\s*\((.+)\)$/);
+      const n = m ? m[1].trim() : s.trim();
+      counts[n] = counts[n]||{name:n, low:0, out:0, lastLow:null, lastOut:null};
+      counts[n].low++;
+      if(!counts[n].lastLow || r.dateISO > counts[n].lastLow) counts[n].lastLow = r.dateISO;
+    });
+    (r.outItems||[]).forEach(n => {
+      counts[n] = counts[n]||{name:n, low:0, out:0, lastLow:null, lastOut:null};
+      counts[n].out++;
+      if(!counts[n].lastOut || r.dateISO > counts[n].lastOut) counts[n].lastOut = r.dateISO;
+    });
+  });
+  const list = Object.values(counts).sort((a,b)=>(b.out*3+b.low) - (a.out*3+a.low));
+
+  // Catalog items not currently tracked
+  const allItems = st.catalog.flatMap(s=>s.items);
+  const tracked = new Set(Object.keys(counts));
+  const calm = allItems.filter(n => !tracked.has(n));
+
+  root.innerHTML = `
+    <div class="flex flex-col gap-4 max-w-[1100px]">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        ${kpiCard('รายการในแคตตาล็อก', fmt(allItems.length), `${st.catalog.length} หมวด`, 'flat', 'package')}
+        ${kpiCard('เคยหมด', fmt(Object.values(counts).filter(c=>c.out>0).length), `จาก ${st.records.length} วัน`, 'neg', 'x-circle')}
+        ${kpiCard('เคยเหลือ', fmt(Object.values(counts).filter(c=>c.low>0).length), 'ครั้งล่าสุดติดตามรายการ', 'warn', 'alert-triangle')}
+      </div>
+
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="font-semibold text-[15px]">รายการที่ต้องจับตา</div>
+            <div class="text-[12px] muted">รวมจากบันทึกทั้งหมด · เรียงตามถี่หมด+เหลือ</div>
+          </div>
+        </div>
+        ${list.length===0 ? '<div class="muted text-center py-8">ยังไม่มีรายการที่ต้องจับตา ✨</div>' : `
+        <div class="overflow-hidden border hairline rounded-xl">
+          <table class="tbl">
+            <thead>
+              <tr><th>รายการ</th><th class="text-right">หมด</th><th class="text-right">เหลือ</th><th>ล่าสุด</th><th>ความถี่</th></tr>
+            </thead>
+            <tbody>
+              ${list.map(c => {
+                const maxBar = Math.max(...list.map(x=>x.out*3+x.low));
+                const w = Math.round((c.out*3+c.low)/maxBar*100);
+                return `<tr>
+                  <td class="font-medium">${escHtml(c.name)}</td>
+                  <td class="text-right num">${c.out?`<span class="pill pill-neg">${c.out}×</span>`:'—'}</td>
+                  <td class="text-right num">${c.low?`<span class="pill pill-warn">${c.low}×</span>`:'—'}</td>
+                  <td class="muted text-[12px]">${c.lastOut?'หมด '+fmtDate(c.lastOut):c.lastLow?'เหลือ '+fmtDate(c.lastLow):'—'}</td>
+                  <td><div class="h-1.5 rounded-full surface-2 overflow-hidden" style="min-width:120px;"><div class="h-full bg-accent" style="width:${w}%"></div></div></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>`}
+      </div>
+
+      <div class="card p-5">
+        <div class="font-semibold text-[15px] mb-3">ไม่เคยเป็นปัญหา <span class="muted text-[12px] font-normal">· ${calm.length} รายการ</span></div>
+        <div class="flex flex-wrap gap-1.5">
+          ${calm.length===0?'<span class="muted text-[13px]">—</span>':calm.map(n=>`<span class="pill">${escHtml(n)}</span>`).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+</script>
+
+<!-- ============================================================== -->
+<!-- VIEW: ADMIN                                                     -->
+<!-- ============================================================== -->
+<script>
+function renderAdmin(root){
+  const id = state.activeStore;
+  const def = STORE_DEFS[id];
+  const st = state.stores[id];
+
+  root.innerHTML = `
+    <div class="max-w-[1000px] flex flex-col gap-4">
+
+      <!-- KPI Target -->
+      <div class="card p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <i data-lucide="target"></i>
+          <span class="font-semibold text-[14.5px]">เป้ายอดสุทธิรายเดือน</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="muted text-[13px]">฿</span>
+          <input class="inp num" id="adm_target" type="number" min="0" value="${st.target}" style="max-width:200px">
+          <button class="btn btn-primary" onclick="saveTarget()"><i data-lucide="check"></i> บันทึก</button>
+        </div>
+        <div class="text-[12px] muted mt-2">ใช้เป็นเปอร์เซ็นต์ในแดชบอร์ด</div>
+      </div>
+
+      <!-- Field editors -->
+      ${fieldEditor(id, 'basic', 'ข้อมูลพื้นฐาน', 'list')}
+      ${fieldEditor(id, 'sale',  def.saleType==='units'?'ยอดขาย (เงินสด + แก้ว)':'ยอดขาย', 'trending-up')}
+      ${st.cost.length || !def.hasDynCosts ? fieldEditor(id, 'cost', 'ค่าใช้จ่ายคงที่', 'minus-circle') : ''}
+      ${def.hasBoxEgg ? fieldEditor(id, 'boxegg', 'กล่อง / ไข่', 'boxes') : ''}
+
+      <!-- Catalog editor -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <i data-lucide="package-2"></i>
+            <span class="font-semibold text-[14.5px]">แคตตาล็อกสต็อก</span>
+          </div>
+          <button class="btn btn-ghost" onclick="addCat('${id}')"><i data-lucide="plus"></i> เพิ่มหมวด</button>
+        </div>
+        <div class="flex flex-col gap-4">
+          ${st.catalog.map((sec,ci) => `
+            <div class="border hairline rounded-xl p-3">
+              <div class="flex items-center gap-2 mb-2">
+                <input class="inp" value="${escHtml(sec.cat)}" onchange="state.stores['${id}'].catalog[${ci}].cat=this.value;saveField('${id}','catalog',state.stores['${id}'].catalog)" style="font-weight:600;max-width:360px;">
+                <button class="btn btn-icon btn-danger" onclick="delCat('${id}',${ci})"><i data-lucide="trash-2"></i></button>
+              </div>
+              <div class="flex flex-wrap gap-1.5 mb-2">
+                ${sec.items.map((it,ii)=>`<span class="pill" style="padding:4px 9px;">${escHtml(it)}<button class="ml-1.5 muted-2 hover:text-[color:var(--neg)]" onclick="state.stores['${id}'].catalog[${ci}].items.splice(${ii},1);saveField('${id}','catalog',state.stores['${id}'].catalog);renderView()"><i data-lucide="x" style="width:11px;height:11px"></i></button></span>`).join('')}
+              </div>
+              <div class="flex gap-2">
+                <input class="inp" placeholder="เพิ่มรายการใหม่..." style="font-size:13px" id="add_it_${ci}" onkeydown="if(event.key==='Enter') addCatItem('${id}',${ci})">
+                <button class="btn btn-soft" onclick="addCatItem('${id}',${ci})"><i data-lucide="plus"></i></button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Reset -->
+      <div class="card p-5 border-dashed" style="border-style:dashed">
+        <div class="font-semibold text-[14.5px] mb-2">รีเซ็ตค่าเริ่มต้น</div>
+        <div class="text-[12.5px] muted mb-3">คืนสคีมาและแคตตาล็อกของร้านนี้กลับเป็นค่าจากโรงงาน (จะไม่ลบข้อมูลที่บันทึกไว้)</div>
+        <button class="btn btn-danger" onclick="resetStoreDefaults('${id}')"><i data-lucide="rotate-ccw"></i> รีเซ็ตสคีมา + แคตตาล็อก</button>
+      </div>
+
+    </div>
+  `;
+}
+
+function fieldEditor(id, kind, label, icon){
+  const st = state.stores[id];
+  const fields = st[kind];
+  const labels = { basic:'data', sale:'data', cost:'data', boxegg:'data' };
+  return `<div class="card p-5">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-2">
+        <i data-lucide="${icon}"></i>
+        <span class="font-semibold text-[14.5px]">${label}</span>
+      </div>
+    </div>
+    <div class="flex flex-col">
+      ${fields.map((f,i) => `<div class="flex items-center gap-2 py-2 border-b hairline last:border-b-0">
+        <i data-lucide="grip-vertical" class="muted-2 cursor-grab"></i>
+        <input class="inp" style="font-size:13.5px;flex:1" value="${escHtml(f.label)}" onchange="state.stores['${id}'].${kind}[${i}].label=this.value;saveField('${id}','${kind}',state.stores['${id}'].${kind})" ${f.fixed?'disabled':''}>
+        ${'role' in f ? `<select class="inp" style="font-size:12px;max-width:120px" onchange="state.stores['${id}'].${kind}[${i}].role=this.value;saveField('${id}','${kind}',state.stores['${id}'].${kind})">
+          ${['plus','minus','count','unit','none'].map(r=>`<option value="${r}" ${f.role===r?'selected':''}>${r==='plus'?'+ บวก':r==='minus'?'− ลบ':r==='unit'?'#หน่วย':r==='count'?'#นับ':'ไม่นับ'}</option>`).join('')}
+        </select>` : ''}
+        <span class="pill" style="font-size:10.5px;padding:1px 7px">${f.type||'number'}</span>
+        ${f.fixed?'<span class="pill pill-accent" style="font-size:10.5px;padding:1px 7px">ระบบ</span>':''}
+        ${f.req?'<span class="pill pill-neg" style="font-size:10.5px;padding:1px 7px">จำเป็น</span>':''}
+        ${!f.fixed?`<button class="btn btn-icon btn-danger" onclick="delField('${id}','${kind}',${i})"><i data-lucide="trash-2"></i></button>`:''}
+      </div>`).join('')}
+    </div>
+    <div class="flex gap-2 mt-3 pt-3 border-t hairline">
+      <input class="inp" style="flex:1;font-size:13px" placeholder="เพิ่มฟิลด์ใหม่..." id="add_${kind}_inp" onkeydown="if(event.key==='Enter') addField('${id}','${kind}')">
+      <button class="btn btn-soft" onclick="addField('${id}','${kind}')"><i data-lucide="plus"></i> เพิ่ม</button>
+    </div>
+  </div>`;
+}
+
+function addField(id, kind){
+  const inp = document.getElementById('add_'+kind+'_inp');
+  const v = inp.value.trim(); if(!v) return;
+  const st = state.stores[id];
+  const newF = { id: uid(), key: v.toLowerCase().replace(/\s+/g,'_'), label: v, type: kind==='basic'?'text':'number', ph:'0', fixed:false, req:false };
+  if(kind==='sale') newF.role='count';
+  st[kind].push(newF);
+  saveField(id, kind, st[kind]);
+  renderView();
+  toast('✅ เพิ่ม "'+v+'"','ok');
+}
+function delField(id, kind, i){
+  if(!confirm('ลบฟิลด์นี้?')) return;
+  state.stores[id][kind].splice(i,1);
+  saveField(id, kind, state.stores[id][kind]);
+  renderView();
+}
+function addCat(id){
+  const v = prompt('ชื่อหมวดใหม่:'); if(!v) return;
+  state.stores[id].catalog.push({cat:v, items:[]});
+  saveField(id,'catalog', state.stores[id].catalog);
+  renderView();
+}
+function delCat(id, i){
+  if(!confirm('ลบหมวดนี้?')) return;
+  state.stores[id].catalog.splice(i,1);
+  saveField(id,'catalog', state.stores[id].catalog);
+  renderView();
+}
+function addCatItem(id, ci){
+  const inp = document.getElementById('add_it_'+ci);
+  const v = inp.value.trim(); if(!v) return;
+  state.stores[id].catalog[ci].items.push(v);
+  saveField(id,'catalog', state.stores[id].catalog);
+  renderView();
+}
+function saveTarget(){
+  const v = +document.getElementById('adm_target').value || 0;
+  saveField(state.activeStore,'target', v);
+  state.stores[state.activeStore].target = v;
+  toast('✅ บันทึกเป้าแล้ว','ok');
+}
+function resetStoreDefaults(id){
+  if(!confirm('คืนค่าสคีมาและแคตตาล็อกของร้านนี้?')) return;
+  const def = STORE_DEFS[id];
+  ['basic','sale','cost','catalog'].forEach(kind=>{
+    const key = 'default'+kind.charAt(0).toUpperCase()+kind.slice(1);
+    if(def[key]) saveField(id, kind, deepCopy(def[key]));
+  });
+  if(def.hasBoxEgg) saveField(id,'boxegg', deepCopy(def.defaultBoxEgg));
+  reloadStore(id);
+  renderView();
+  toast('✅ รีเซ็ตสคีมาแล้ว','ok');
+}
+</script>
+
+<!-- ============================================================== -->
+<!-- VIEW: SETTINGS                                                  -->
+<!-- ============================================================== -->
+<script>
+function renderSettings(root){
+  const samplePayload = state.stores[state.activeStore].records[0]
+    ? buildPayload(state.activeStore, state.stores[state.activeStore].records[0])
+    : buildSamplePayload(state.activeStore);
+
+  root.innerHTML = `
+    <div class="max-w-[920px] flex flex-col gap-4">
+
+      <!-- Webhooks -->
+      <div class="card p-5">
+        <div class="flex items-center gap-2 mb-1">
+          <i data-lucide="link-2"></i>
+          <span class="font-semibold text-[15px]">Make.com webhook (ต่อร้าน)</span>
+        </div>
+        <div class="text-[12.5px] muted mb-4">วาง URL ของ webhook ที่ได้จาก Make.com แต่ละ scenario · payload จะส่งเป็น JSON พร้อม <code class="mono">lineMessage</code> สำหรับ HTTP module เชื่อม LINE Messaging API</div>
+        <div class="flex flex-col gap-3">
+        ${STORE_IDS.map(id => {
+          const d = STORE_DEFS[id];
+          const s = state.stores[id];
+          const ok = !!s.hook;
+          return `<div class="border hairline rounded-xl p-3">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="w-7 h-7 rounded-md flex items-center justify-center" style="background:oklch(95% 0.04 ${d.accentHue})">${d.badge}</span>
+              <div class="flex-1 font-semibold text-[13.5px]">${escHtml(d.name)}</div>
+              ${ok?'<span class="pill pill-pos">เชื่อมต่อแล้ว</span>':'<span class="pill pill-warn">ยังไม่ได้ตั้งค่า</span>'}
+            </div>
+            <div class="flex gap-2 flex-wrap">
+              <input class="inp mono" id="hook_${id}" placeholder="https://hook.eu1.make.com/..." value="${escHtml(s.hook)}" style="flex:1;min-width:240px;font-size:12.5px">
+              <button class="btn btn-ghost" onclick="testHook('${id}')"><i data-lucide="zap"></i> ทดสอบ</button>
+              <button class="btn btn-primary" onclick="saveHook('${id}')"><i data-lucide="save"></i> บันทึก</button>
+            </div>
+            <div class="text-[11.5px] muted-2 mt-1" id="hook_status_${id}"></div>
+          </div>`;
+        }).join('')}
+        </div>
+      </div>
+
+      <!-- Theme -->
+      <div class="card p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <i data-lucide="palette"></i>
+          <span class="font-semibold text-[14.5px]">ธีม</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <div class="text-[12.5px] muted mb-2">โหมด</div>
+            <div class="flex gap-2">
+              ${['light','dark'].map(m=>`<button class="btn ${state.theme===m?'btn-primary':'btn-ghost'}" onclick="setTheme('${m}')"><i data-lucide="${m==='light'?'sun':'moon'}"></i> ${m==='light'?'สว่าง':'มืด'}</button>`).join('')}
+            </div>
+          </div>
+          <div>
+            <div class="text-[12.5px] muted mb-2">สี accent (ต่อร้าน)</div>
+            <div class="flex flex-col gap-2">
+              ${STORE_IDS.map(id=>{
+                const d = STORE_DEFS[id];
+                const cur = state.stores[id].accentHue;
+                return `<div class="flex items-center gap-3">
+                  <span class="text-[12.5px] w-20 truncate">${d.badge} ${escHtml(d.shortName)}</span>
+                  <div class="flex gap-1.5 flex-wrap">
+                  ${[245,200,160,140,55,25,0,330,290].map(h => `<button class="w-6 h-6 rounded-full transition-all ${cur===h?'ring-2 ring-offset-2 ring-offset-[color:var(--bg)]':''}" style="background:oklch(${state.theme==='dark'?72:60}% 0.16 ${h});" onclick="setAccentHue('${id}', ${h})"></button>`).join('')}
+                  </div>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payload preview -->
+      <div class="card p-5">
+        <div class="flex items-center gap-2 mb-2">
+          <i data-lucide="code-2"></i>
+          <span class="font-semibold text-[14.5px]">Sample payload (${escHtml(STORE_DEFS[state.activeStore].name)})</span>
+        </div>
+        <div class="text-[12.5px] muted mb-3">รูปแบบ JSON ที่ส่งไป Make.com — ใช้ Map keys ตามนี้</div>
+        <pre class="mono text-[11.5px] p-3 rounded-lg surface-2 overflow-x-auto" style="max-height:340px;white-space:pre-wrap;word-break:break-word;">${escHtml(JSON.stringify(samplePayload, null, 2))}</pre>
+      </div>
+
+      <!-- Backup -->
+      <div class="card p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <i data-lucide="database"></i>
+          <span class="font-semibold text-[14.5px]">สำรอง / กู้คืน ข้อมูล</span>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button class="btn btn-ghost" onclick="backupAll()"><i data-lucide="download"></i> ดาวน์โหลดทั้งหมด (JSON)</button>
+          <label class="btn btn-ghost cursor-pointer"><i data-lucide="upload"></i> นำเข้า JSON
+            <input type="file" accept="application/json" hidden onchange="importBackup(event)">
+          </label>
+          <button class="btn btn-danger" onclick="wipeAll()"><i data-lucide="trash-2"></i> ลบทุกอย่างในเครื่อง</button>
+        </div>
+        <div class="text-[11.5px] muted-2 mt-3">ข้อมูลทั้งหมดเก็บใน localStorage บนเครื่องนี้เท่านั้น</div>
+      </div>
+
+    </div>
+  `;
+}
+
+function buildSamplePayload(id){
+  const def = STORE_DEFS[id];
+  const st = state.stores[id];
+  const sample = { date: todayISO(), dateISO: todayISO(), recorder:'ตัวอย่าง', note:'' };
+  [...st.basic, ...st.sale, ...st.cost, ...(def.hasBoxEgg?st.boxegg:[])].forEach(f => {
+    sample[f.key] = f.type==='date' ? todayISO() : (f.type==='text' ? '' : 0);
+  });
+  if(def.hasDynCosts) sample.costsDyn = [{amt:50,desc:'ทิชชู่'}];
+  sample.net = 0; sample.total = 0; sample.leftItems=[]; sample.outItems=[];
+  return buildPayload(id, sample);
+}
+
+function saveHook(id){
+  const v = document.getElementById('hook_'+id).value.trim();
+  saveField(id, 'hook', v);
+  state.stores[id].hook = v;
+  toast('✅ บันทึก webhook แล้ว','ok');
+  renderShell();
+  lucide.createIcons();
+}
+async function testHook(id){
+  const v = document.getElementById('hook_'+id).value.trim();
+  if(!v){ toast('ใส่ URL ก่อน','er'); return; }
+  const st = document.getElementById('hook_status_'+id);
+  st.innerHTML = '<span class="spin"></span> กำลังทดสอบ...';
+  try{
+    await fetch(v, {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({test:true, message:'ทดสอบจาก yy. console', store:id, timestamp:new Date().toISOString()})});
+    st.innerHTML = '<span style="color:var(--pos)">✓ ส่งทดสอบแล้ว — ตรวจที่ Make.com</span>';
+  }catch(e){
+    st.innerHTML = '<span style="color:var(--neg)">✕ ส่งไม่ได้: '+e.message+'</span>';
+  }
+}
+function setTheme(t){
+  state.theme = t;
+  LS.set('yy.theme', t);
+  applyTheme();
+  applyAccent();
+  renderView();
+}
+function setAccentHue(id, h){
+  saveField(id,'accentHue', h);
+  state.stores[id].accentHue = h;
+  if(id===state.activeStore) applyAccent();
+  renderShell();
+  renderView();
+  lucide.createIcons();
+}
+function backupAll(){
+  const data = { exported:new Date().toISOString(), stores:{} };
+  STORE_IDS.forEach(id => data.stores[id] = getStoreState(id));
+  download(`yy-backup-${todayISO()}.json`, JSON.stringify(data, null, 2), 'application/json');
+}
+function importBackup(e){
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try{
+      const d = JSON.parse(ev.target.result);
+      if(!d.stores){ toast('ไฟล์ไม่ถูกต้อง','er'); return; }
+      if(!confirm('นำเข้าจะเขียนทับข้อมูลเดิม — ทำต่อหรือไม่?')) return;
+      STORE_IDS.forEach(id => {
+        if(!d.stores[id]) return;
+        ['basic','sale','cost','boxegg','catalog','records','hook','target','accentHue'].forEach(kk=>{
+          if(d.stores[id][kk] !== undefined) saveField(id,kk, d.stores[id][kk]);
+        });
+      });
+      loadAllStores();
+      renderView();
+      toast('✅ นำเข้าสำเร็จ','ok');
+    } catch(err){ toast('JSON ไม่ถูกต้อง: '+err.message,'er'); }
+  };
+  r.readAsText(f);
+}
+function wipeAll(){
+  if(!confirm('ลบข้อมูลทั้งหมดในเครื่อง?')) return;
+  if(!confirm('แน่ใจ? ไม่สามารถย้อนได้')) return;
+  Object.keys(localStorage).filter(k=>k.startsWith('yy.')).forEach(k=>localStorage.removeItem(k));
+  location.reload();
+}
+</script>
+
+<!-- ============================================================== -->
+<!-- DEMO SEED + BOOTSTRAP                                           -->
+<!-- ============================================================== -->
+<script>
+function seedDemo(){
+  if(LS.get('yy.seeded')) return;
+  // Only seed if ALL 3 stores empty
+  const anyData = STORE_IDS.some(id => (LS.get(k(id,'records'))||[]).length > 0);
+  if(anyData){ LS.set('yy.seeded', 1); return; }
+  STORE_IDS.forEach(id => {
+    const def = STORE_DEFS[id];
+    const recs = [];
+    const baseTarget = def.defaultTarget / 30;
+    for(let i=0; i<30; i++){
+      const d = new Date(); d.setDate(d.getDate()-(29-i));
+      const dateISO = d.toISOString().split('T')[0];
+      const variance = 0.6 + Math.random()*0.9; // 0.6× to 1.5×
+      const weekend = (d.getDay()===0 || d.getDay()===6) ? 1.25 : 1.0;
+      const net = Math.round(baseTarget * variance * weekend);
+      const rec = { dateISO, date: dateISO, recorder: ['ฝน','ก้อง','พี่บิ๊ก'][i%3], note:'', ts: d.getTime(), synced: Math.random()>0.2 };
+      // Populate sale fields
+      if(def.saleType==='units'){
+        const cold = Math.round(40 + variance*60 * weekend);
+        const hotG = Math.round(15 + variance*20);
+        const hotB = Math.round(Math.random()*4);
+        rec.cold = cold; rec.hotG = hotG; rec.hotB = hotB; rec.bottle = Math.round(Math.random()*8);
+        rec.float = 500; rec.cashIn = Math.max(0, net + 500 + Math.round(120 + Math.random()*120));
+        rec.ice = 160 + (Math.random()>0.5 ? 80 : 0);
+        rec.costsDyn = Math.random()>0.7 ? [{amt: 80+Math.round(Math.random()*120), desc:'ทิชชู่'}] : [];
+        rec.total = cold + hotG + hotB;
+        rec.net = rec.cashIn - rec.float - rec.ice - (rec.costsDyn[0]?.amt||0);
+      } else {
+        rec.float = 1000;
+        rec.cashIn = Math.max(0, net + 1000 + Math.round(180 + Math.random()*200));
+        if(id==='pussorn'){
+          rec.water = 30 + Math.round(Math.random()*30);
+          rec.ice = 70 + Math.round(Math.random()*40);
+          rec.otherCost = Math.random()>0.6 ? Math.round(Math.random()*100) : 0;
+          rec.orders = Math.round(20 + variance*30 * weekend);
+        } else { // khaow
+          rec.ice = 60 + Math.round(Math.random()*40);
+          rec.gas = Math.random()>0.85 ? 350 : 0;
+          rec.otherCost = Math.random()>0.7 ? Math.round(Math.random()*80) : 0;
+          rec.servings = Math.round(30 + variance*25 * weekend);
+          rec.servingsHalf = Math.round(Math.random()*8);
+          rec.boxesLeft = Math.round(Math.random()*15);
+          rec.startBoxes = 100; rec.endBoxes = 100 - Math.round(15+Math.random()*30);
+          rec.startEggs = 200; rec.endEggs = 200 - Math.round(40+Math.random()*60);
+        }
+        rec.total = rec.cashIn - rec.float;
+        const costSum = (rec.water||0)+(rec.ice||0)+(rec.gas||0)+(rec.otherCost||0);
+        rec.net = rec.cashIn - rec.float - costSum;
+      }
+      // Random inv low/out (~25% of days have items)
+      const cat = def.defaultCatalog;
+      const left=[], out=[];
+      if(Math.random()>0.6){
+        const sec = cat[Math.floor(Math.random()*cat.length)];
+        const n = sec.items[Math.floor(Math.random()*sec.items.length)];
+        if(Math.random()>0.4) left.push(n+(Math.random()>0.5?` (เหลือ ${Math.ceil(Math.random()*3)})`:''));
+        else out.push(n);
+      }
+      if(Math.random()>0.85){
+        const sec = cat[Math.floor(Math.random()*cat.length)];
+        const n = sec.items[Math.floor(Math.random()*sec.items.length)];
+        if(!left.includes(n) && !out.includes(n)) out.push(n);
+      }
+      rec.leftItems = left;
+      rec.outItems = out;
+      recs.push(rec);
+    }
+    LS.set(k(id,'records'), recs);
+  });
+  LS.set('yy.seeded', 1);
+}
+
+/* --------- CMD palette --------- */
+function openCmd(){
+  document.getElementById('cmd_modal').classList.add('show');
+  setTimeout(()=>{
+    document.getElementById('cmd_inp').focus();
+    renderCmdResults('');
+  }, 50);
+}
+function closeCmd(){ document.getElementById('cmd_modal').classList.remove('show'); }
+function renderCmdResults(q){
+  const items = [
+    ...STORE_IDS.map(id => ({type:'store', label: STORE_DEFS[id].badge+' '+STORE_DEFS[id].name, action:()=>{switchStore(id); closeCmd();}})),
+    ...VIEWS.map(v => ({type:'view', label: '→ '+v.th, action:()=>{switchView(v.id); closeCmd();}}))
+  ];
+  const f = q ? items.filter(i => i.label.toLowerCase().includes(q.toLowerCase())) : items;
+  document.getElementById('cmd_results').innerHTML = f.map((it,i)=>`<button class="nav-item w-full" data-cmd="${i}"><span class="text-[10px] muted-2 uppercase">${it.type}</span><span>${it.label}</span></button>`).join('');
+  document.querySelectorAll('#cmd_results button').forEach((b,i)=>b.onclick = f[i].action);
+}
+document.addEventListener('keydown', e => {
+  if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); openCmd(); }
+  if(e.key==='Escape') closeCmd();
+});
+document.getElementById('cmd_modal').addEventListener('click', e=>{ if(e.target.id==='cmd_modal') closeCmd(); });
+
+/* --------- BOOT --------- */
+document.getElementById('theme_toggle').addEventListener('click', ()=>{
+  state.theme = state.theme==='light'?'dark':'light';
+  LS.set('yy.theme', state.theme);
+  applyTheme(); applyAccent();
+  renderView(); renderShell();
+});
+document.getElementById('cmd_inp')?.addEventListener('input', e => renderCmdResults(e.target.value));
+
+(function boot(){
+  applyTheme();
+  seedDemo();
+  loadAllStores();
+  applyAccent();
+  // Restore last view
+  state.view = LS.get('yy.lastView.'+state.activeStore) || 'dashboard';
+  renderShell();
+  renderView();
+  lucide.createIcons();
+})();
+</script>
+
+</body>
+</html>

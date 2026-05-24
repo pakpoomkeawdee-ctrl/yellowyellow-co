@@ -1,0 +1,103 @@
+/* ============================================================
+ * yellowyellow.co — Shared design tokens
+ * Used by both POS (index.html) and Admin (yellowyellow.html)
+ * ============================================================ */
+
+:root {
+  --bg: #FAFAF9;
+  --surface: #FFFFFF;
+  --surface-2: #F5F5F4;
+  --text: #1C1917;
+  --text-2: #44403C;
+  --muted: #78716C;
+  --border: #E7E5E4;
+  --border-strong: #D6D3D1;
+  --pos: #059669;
+  --neg: #DC2626;
+  --warn: #F59E0B;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-lg: 22px;
+  --shadow: 0 1px 2px rgba(28, 25, 23, .04), 0 4px 12px rgba(28, 25, 23, .04);
+  --shadow-lg: 0 4px 14px rgba(28, 25, 23, .06), 0 20px 50px rgba(28, 25, 23, .08);
+  --font-sans: 'Sarabun', 'IBM Plex Sans Thai', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Kanit', 'Sarabun', system-ui, sans-serif;
+  --font-num: 'Plus Jakarta Sans', 'Sarabun', system-ui, sans-serif;
+  /* Per-store accent injected via JS */
+  --store: #1E40AF;
+  --store-soft: #3B82F6;
+  --store-tint: #DBEAFE;
+  --store-light: #EFF6FF;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  font-feature-settings: 'tnum' 1, 'cv11' 1;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  /* Prevent rubber-band over text input on iOS */
+  overscroll-behavior-y: contain;
+}
+h1, h2, h3, h4, h5 { word-break: keep-all; }
+button {
+  font-family: inherit; cursor: pointer; border: none; background: none; color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+input, textarea, select { font-family: inherit; }
+code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85em; }
+.num, .mono-num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.font-display { font-family: var(--font-display); }
+
+/* ── Connectivity toast ────────────────────────────────────── */
+.yy-toast {
+  position: fixed; bottom: 22px; right: 22px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 13.5px; font-weight: 500;
+  display: flex; align-items: center; gap: 10px;
+  min-width: 240px; max-width: 380px;
+  z-index: 9999;
+  transform: translateY(12px); opacity: 0; pointer-events: none;
+  transition: all .22s cubic-bezier(.2,.8,.2,1);
+}
+.yy-toast.show { transform: translateY(0); opacity: 1; }
+.yy-toast.ok { border-left: 3px solid var(--pos); }
+.yy-toast.er { border-left: 3px solid var(--neg); }
+.yy-toast.info { border-left: 3px solid var(--store); }
+
+/* ── Offline indicator ─────────────────────────────────────── */
+.yy-offline {
+  position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
+  background: var(--warn);
+  color: #fff;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 9998;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, .3);
+  display: none;
+}
+.yy-offline.show { display: block; }
+.yy-offline.queue::after {
+  content: ' · คิว ' attr(data-queue);
+  opacity: 0.9;
+}
+
+/* ── Print helpers ─────────────────────────────────────────── */
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+}
+
+/* ── Touch tweaks ─────────────────────────────────────────── */
+@media (pointer: coarse) {
+  button { min-height: 40px; }
+}

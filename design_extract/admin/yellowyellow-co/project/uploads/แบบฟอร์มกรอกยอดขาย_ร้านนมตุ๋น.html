@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐄 ร้านนมตุ๋น — บันทึกยอดขายประจำวัน</title>
+<style>
+:root{
+  --gd:#2E7D32;--gm:#388E3C;--gl:#A5D6A7;--gp:#F1F8E9;--gb:#E8F5E9;
+  --rd:#C62828;--rl:#FFEBEE;
+  --od:#E65100;--ol:#FFF3E0;
+  --bd:#1565C0;--bl:#E3F2FD;
+  --yd:#F57F17;--yl:#FFFDE7;
+  --pu:#6A1B9A;--pl:#F3E5F5;
+  --br:#C8E6C9;--tx:#212121;--mu:#757575;
+  --sh:0 2px 8px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Sarabun','Segoe UI',Arial,sans-serif;background:var(--gb);min-height:100vh;padding:16px;}
+.wrap{max-width:840px;margin:0 auto;display:flex;flex-direction:column;gap:13px;}
+
+/* Header */
+.hdr{background:linear-gradient(135deg,#1B5E20,var(--gd));border-radius:12px;padding:20px 24px;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.hdr-left h1{font-size:1.4rem;font-weight:800;}
+.hdr-left p{font-size:.8rem;opacity:.8;margin-top:2px;}
+.hdr-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.hdr-badge{background:rgba(255,255,255,.15);border-radius:8px;padding:7px 13px;text-align:center;white-space:nowrap;}
+.hdr-badge .lbl{font-size:.68rem;opacity:.8;}
+.hdr-badge .val{font-size:1.2rem;font-weight:800;}
+.btn-hdr{background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);color:#fff;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:.8rem;font-family:inherit;font-weight:600;white-space:nowrap;transition:all .15s;}
+.btn-hdr:hover{background:rgba(255,255,255,.32);}
+.btn-hdr.on{background:rgba(129,199,132,.4);border-color:#81C784;}
+
+/* Setup Modal Overlay */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:#fff;border-radius:14px;width:100%;max-width:680px;margin:auto;box-shadow:0 8px 40px rgba(0,0,0,.25);overflow:hidden;}
+.modal-hdr{background:linear-gradient(135deg,#1B5E20,var(--gd));padding:18px 24px;color:#fff;display:flex;justify-content:space-between;align-items:center;}
+.modal-hdr h2{font-size:1.05rem;font-weight:800;}
+.btn-close{background:rgba(255,255,255,.2);border:none;color:#fff;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.1rem;line-height:30px;text-align:center;}
+.modal-body{padding:20px 24px;max-height:80vh;overflow-y:auto;}
+
+/* Steps */
+.step-block{margin-bottom:22px;}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:.78rem;font-weight:800;color:#fff;margin-right:8px;flex-shrink:0;}
+.step-title{font-size:.95rem;font-weight:700;display:flex;align-items:center;margin-bottom:10px;}
+.step-content{background:#F8F9FA;border-radius:8px;padding:14px 16px;font-size:.83rem;color:var(--tx);line-height:1.85;}
+.step-content ol{margin-left:18px;}
+.step-content li{margin-bottom:4px;}
+.step-content .key{background:#E3F2FD;color:var(--bd);border-radius:4px;padding:1px 7px;font-weight:700;font-size:.8rem;white-space:nowrap;}
+.step-content .key.green{background:var(--gp);color:var(--gd);}
+.step-content .key.ora{background:var(--ol);color:var(--od);}
+.step-content .key.pur{background:var(--pl);color:var(--pu);}
+.step-content a{color:var(--bd);font-weight:700;}
+.step-content .note{background:var(--yl);border-left:3px solid var(--yd);padding:8px 10px;border-radius:0 6px 6px 0;margin-top:8px;font-size:.78rem;color:#5D4037;}
+
+/* URL input in modal */
+.modal-url-section{background:var(--gp);border:2px solid var(--gm);border-radius:10px;padding:14px 16px;margin-top:4px;}
+.modal-url-label{font-size:.82rem;font-weight:700;color:var(--gd);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.url-row{display:flex;gap:7px;align-items:center;}
+.url-row input{flex:1;padding:9px 12px;border:1.5px solid var(--br);border-radius:7px;font-size:.87rem;font-family:inherit;background:#fff;outline:none;}
+.url-row input:focus{border-color:var(--gm);box-shadow:0 0 0 3px rgba(56,142,60,.13);}
+.btn-test{background:var(--ol);border:1.5px solid var(--od);color:var(--od);border-radius:7px;padding:9px 14px;cursor:pointer;font-size:.8rem;font-family:inherit;font-weight:700;white-space:nowrap;}
+.btn-save-url{background:var(--gd);border:none;color:#fff;border-radius:7px;padding:9px 14px;cursor:pointer;font-size:.8rem;font-family:inherit;font-weight:700;white-space:nowrap;}
+.conn-status{font-size:.78rem;margin-top:8px;min-height:20px;}
+
+/* Card */
+.card{background:#fff;border-radius:10px;padding:18px 22px;box-shadow:var(--sh);border:1px solid var(--br);}
+.card-title{font-size:.98rem;font-weight:700;color:var(--gd);margin-bottom:14px;padding-bottom:9px;border-bottom:2px solid var(--gl);display:flex;align-items:center;justify-content:space-between;}
+.card-title-l{display:flex;align-items:center;gap:8px;}
+
+/* Grid */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;}
+@media(max-width:560px){.g2,.g3,.g4{grid-template-columns:1fr 1fr;}}
+@media(max-width:380px){.g2,.g3,.g4{grid-template-columns:1fr;}}
+
+/* Field */
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-size:.8rem;font-weight:700;color:var(--gd);}
+.field label .req{color:var(--rd);margin-left:2px;}
+.field label .sub{font-weight:400;color:var(--mu);font-size:.73rem;margin-left:4px;}
+input[type=text],input[type=number],input[type=date],textarea{
+  padding:8px 11px;border:1.5px solid var(--br);border-radius:7px;
+  font-size:.91rem;font-family:inherit;background:var(--gp);color:var(--tx);
+  outline:none;width:100%;transition:border-color .16s,box-shadow .16s;
+}
+input:focus,textarea:focus{border-color:var(--gm);box-shadow:0 0 0 3px rgba(56,142,60,.13);background:#fff;}
+.hint{font-size:.72rem;color:var(--mu);}
+
+/* Computed */
+.computed{background:linear-gradient(135deg,var(--gd),var(--gm));border-radius:10px;padding:13px 18px;color:#fff;text-align:center;}
+.computed.neg{background:linear-gradient(135deg,#b71c1c,#c62828);}
+.computed.blue{background:linear-gradient(135deg,#1565C0,#1976D2);}
+.computed .lbl{font-size:.76rem;opacity:.85;margin-bottom:3px;}
+.computed .val{font-size:1.75rem;font-weight:900;letter-spacing:-.5px;}
+
+/* Cost rows */
+.cost-rows{display:flex;flex-direction:column;gap:7px;margin-bottom:9px;}
+.cost-row{display:grid;grid-template-columns:110px 1fr auto;gap:7px;align-items:center;}
+.cost-row input{padding:7px 10px;font-size:.86rem;}
+.btn-rm{background:var(--rl);border:1.5px solid #EF9A9A;color:var(--rd);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:.82rem;font-family:inherit;}
+.btn-add-c{background:var(--bl);border:1.5px solid #90CAF9;color:var(--bd);border-radius:7px;padding:7px 13px;cursor:pointer;font-size:.83rem;font-family:inherit;font-weight:600;}
+
+/* INVENTORY */
+.inv-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.legend-row{display:flex;gap:10px;flex-wrap:wrap;flex:1;}
+.legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px;}
+.legend-txt{font-size:.74rem;color:var(--mu);display:flex;align-items:center;}
+.edit-banner{display:none;background:var(--ol);border:2px dashed var(--od);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.83rem;color:var(--od);font-weight:600;align-items:center;gap:8px;}
+.edit-banner.show{display:flex;}
+.cat-block{margin-bottom:16px;}
+.cat-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:.78rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;}
+.cat-head input.cat-name-inp{font-size:.78rem;font-weight:700;padding:3px 8px;background:#FFF8E1;border:1.5px solid #F9A825;border-radius:5px;width:auto;display:none;}
+.edit-mode .cat-head input.cat-name-inp{display:inline-block;}
+.edit-mode .cat-head .cat-label{display:none;}
+.btn-del-cat{display:none;background:var(--rl);border:1.5px solid #EF9A9A;color:var(--rd);border-radius:5px;padding:2px 8px;cursor:pointer;font-size:.75rem;font-family:inherit;}
+.edit-mode .btn-del-cat{display:inline-block;}
+.inv-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px;}
+.inv-item{position:relative;border-radius:20px;padding:6px 13px;cursor:pointer;font-size:.83rem;font-weight:600;border:2px solid #E0E0E0;background:#F5F5F5;color:#616161;transition:all .15s;user-select:none;display:flex;align-items:center;}
+.inv-item.left{background:#FFF8E1;border-color:#F9A825;color:var(--od);}
+.inv-item.out{background:var(--rl);border-color:#EF9A9A;color:var(--rd);}
+.s-dot{width:8px;height:8px;border-radius:50%;background:#BDBDBD;margin-right:6px;flex-shrink:0;}
+.inv-item.left .s-dot{background:#F9A825;}
+.inv-item.out  .s-dot{background:var(--rd);}
+.qty-wrap{display:none;align-items:center;gap:3px;margin-left:7px;}
+.inv-item.left .qty-wrap{display:inline-flex;}
+.qty-inp{width:72px;padding:2px 6px;font-size:.76rem;border:1.5px solid #F9A825;border-radius:10px;background:#FFFDE7;color:var(--od);font-family:inherit;font-weight:600;outline:none;}
+.chip-rm{display:none;width:16px;height:16px;border-radius:50%;background:var(--rd);color:#fff;font-size:.7rem;line-height:16px;text-align:center;cursor:pointer;margin-left:6px;flex-shrink:0;border:none;font-family:inherit;}
+.edit-mode-chip .chip-rm{display:inline-block;}
+.edit-mode-chip{cursor:default;}
+.edit-mode-chip .qty-wrap,.edit-mode-chip .s-dot{display:none!important;}
+.add-item-row{display:none;align-items:center;gap:6px;margin-top:4px;}
+.edit-mode-section .add-item-row{display:flex;}
+.add-item-inp{flex:1;padding:5px 10px;border:1.5px solid #F9A825;border-radius:7px;font-size:.82rem;font-family:inherit;background:#FFFDE7;outline:none;}
+.btn-add-item{background:var(--ol);border:1.5px solid var(--od);color:var(--od);border-radius:7px;padding:5px 12px;cursor:pointer;font-size:.82rem;font-family:inherit;font-weight:700;white-space:nowrap;}
+.add-cat-row{display:none;align-items:center;gap:8px;margin-top:4px;}
+.edit-mode-active .add-cat-row{display:flex;}
+.add-cat-inp{flex:1;padding:7px 11px;border:1.5px solid var(--od);border-radius:7px;font-size:.84rem;font-family:inherit;background:#FFFDE7;outline:none;}
+.btn-add-cat{background:var(--ol);border:1.5px solid var(--od);color:var(--od);border-radius:7px;padding:7px 14px;cursor:pointer;font-size:.83rem;font-family:inherit;font-weight:700;}
+.quick-add-row{display:flex;align-items:center;gap:7px;margin-top:10px;}
+.quick-add-row input{flex:1;padding:7px 12px;border:1.5px dashed var(--br);border-radius:20px;font-size:.84rem;font-family:inherit;background:var(--gp);outline:none;}
+.quick-add-row input:focus{border-color:var(--gm);background:#fff;}
+.btn-quick{background:var(--gp);border:1.5px solid var(--gm);color:var(--gd);border-radius:20px;padding:7px 14px;cursor:pointer;font-size:.83rem;font-family:inherit;font-weight:700;}
+.btn-edit-mode{background:var(--ol);border:1.5px solid var(--od);color:var(--od);border-radius:7px;padding:6px 13px;cursor:pointer;font-size:.8rem;font-family:inherit;font-weight:700;white-space:nowrap;}
+.btn-edit-mode.active{background:var(--od);color:#fff;}
+
+/* Buttons */
+.btn-row{display:flex;gap:9px;flex-wrap:wrap;}
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .16s;}
+.btn-primary{background:var(--gd);color:#fff;flex:1;}
+.btn-primary:hover{background:#1B5E20;transform:translateY(-1px);box-shadow:0 4px 14px rgba(46,125,50,.28);}
+.btn-secondary{background:#fff;color:var(--gd);border:2px solid var(--gm);}
+.btn-secondary:hover{background:var(--gp);}
+.btn-danger-s{background:var(--rl);color:var(--rd);border:2px solid #EF9A9A;}
+
+/* Sync bar */
+.sync-bar{display:none;background:var(--gp);border:1.5px solid var(--br);border-radius:8px;padding:10px 14px;font-size:.82rem;color:var(--gd);align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.sync-bar.show{display:flex;}
+.sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:.75rem;border-radius:20px;padding:3px 10px;font-weight:600;}
+.sb-none{background:#F5F5F5;color:#9E9E9E;border:1px solid #E0E0E0;}
+.sb-ok{background:#E8F5E9;color:var(--gd);border:1px solid var(--gl);}
+.sb-wait{background:var(--rl);color:var(--rd);border:1px solid #EF9A9A;}
+.sb-ing{background:var(--yl);color:var(--yd);border:1px solid #FFE082;}
+.btn-sync-all{background:var(--gd);color:#fff;border:none;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.8rem;font-family:inherit;font-weight:700;display:flex;align-items:center;gap:6px;}
+.btn-sync-all:hover{background:#1B5E20;}
+.btn-sync-all:disabled{opacity:.5;cursor:not-allowed;}
+
+/* Table */
+.rec-wrap{overflow-x:auto;margin-top:10px;}
+table{width:100%;border-collapse:collapse;font-size:.79rem;}
+th{background:var(--gd);color:#fff;padding:7px 9px;text-align:center;white-space:nowrap;font-weight:600;}
+td{padding:6px 9px;border-bottom:1px solid #E8F5E9;text-align:center;vertical-align:top;}
+tr:nth-child(even) td{background:var(--gp);}
+tr:hover td{background:var(--gl);}
+.tdl{text-align:left;max-width:160px;}
+.chip{display:inline-block;border-radius:4px;padding:2px 6px;font-size:.71rem;margin:1px 2px;white-space:nowrap;}
+.co{background:var(--rl);color:var(--rd);}
+.cl{background:#FFF8E1;color:var(--od);}
+.cc{background:var(--bl);color:var(--bd);}
+.stats-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px;}
+.stat-p{background:var(--gp);border:1px solid var(--br);border-radius:20px;padding:4px 13px;font-size:.79rem;color:var(--gd);font-weight:700;}
+.export-box{background:var(--yl);border:1.5px solid #F9A825;border-radius:8px;padding:12px;margin-top:9px;}
+.export-box textarea{width:100%;height:90px;font-family:monospace;font-size:.73rem;border:1px solid #F9A825;border-radius:4px;padding:7px;background:var(--yl);resize:vertical;}
+.btn-sm-sync{background:var(--gp);border:1.5px solid var(--gm);color:var(--gd);border-radius:5px;padding:3px 8px;cursor:pointer;font-size:.71rem;font-family:inherit;font-weight:700;white-space:nowrap;}
+.btn-sm-sync.done{background:#C8E6C9;border-color:var(--gd);}
+.btn-sm-sync.err{background:var(--rl);border-color:var(--rd);color:var(--rd);}
+.btn-sm-sync.ing{opacity:.6;cursor:wait;}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 18px;border-radius:8px;font-weight:700;font-size:.86rem;box-shadow:0 4px 16px rgba(0,0,0,.2);display:none;z-index:999;animation:tIn .25s;color:#fff;max-width:320px;}
+.toast.ok{background:var(--gd);}
+.toast.er{background:var(--rd);}
+.toast.in{background:var(--bd);}
+@keyframes tIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;}
+@keyframes sp{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ══ HEADER ══════════════════════════════════════════════ -->
+<div class="hdr">
+  <div class="hdr-left">
+    <h1>🐄 ร้านนมตุ๋น</h1>
+    <p id="hdr_sub">บันทึกยอดขายประจำวัน</p>
+  </div>
+  <div class="hdr-right">
+    <button class="btn-hdr" id="btn_setup" onclick="openSetup()">⚙️ ตั้งค่าเชื่อมต่อ</button>
+    <div class="hdr-badge">
+      <div class="lbl">วันนี้</div>
+      <div class="val" id="hdr_date">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SETUP MODAL ═════════════════════════════════════════ -->
+<div class="modal-overlay" id="setup_modal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h2>🔗 ตั้งค่าการเชื่อมต่อ</h2>
+      <button class="btn-close" onclick="closeSetup()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- STEP 1: LINE Messaging API -->
+      <div class="step-block">
+        <div class="step-title">
+          <span class="step-num" style="background:#06C755;">1</span>
+          📱 สร้าง LINE Official Account + หา Group ID (ทำครั้งเดียว)
+        </div>
+        <div class="step-content">
+          <strong style="color:var(--gd);">1A — สร้างบัญชี LINE OA และ Channel Access Token</strong>
+          <ol>
+            <li>เปิดเว็บ <a href="https://developers.line.biz" target="_blank">developers.line.biz</a> → กด <span class="key" style="background:#E8F5E9;color:#06C755;">Log in</span> ด้วยบัญชี LINE</li>
+            <li>กด <span class="key" style="background:#E8F5E9;color:#06C755;">Create a new provider</span> → ตั้งชื่อ <em>"ร้านนมตุ๋น"</em> → กด <span class="key" style="background:#E8F5E9;color:#06C755;">Create</span></li>
+            <li>กด <span class="key" style="background:#E8F5E9;color:#06C755;">Create a new channel</span> → เลือก <span class="key" style="background:#E8F5E9;color:#06C755;">Messaging API</span></li>
+            <li>กรอกข้อมูล: Channel name = <em>ร้านนมตุ๋น</em>, Category = <em>Food &amp; Drink</em> → กด <span class="key" style="background:#E8F5E9;color:#06C755;">Create</span></li>
+            <li>คลิกแท็บ <span class="key" style="background:#E8F5E9;color:#06C755;">Messaging API</span> → เลื่อนลงล่างสุด → <strong>Issue</strong> Channel access token → <strong>คัดลอก token ที่ได้</strong> (เก็บไว้ใช้ใน Step 2)</li>
+          </ol>
+          <br>
+          <strong style="color:var(--gd);">1B — เพิ่ม Bot เข้ากลุ่มไลน์ + หา Group ID</strong>
+          <ol>
+            <li>ในหน้า Messaging API เดิม → คัดลอก <strong>Bot basic ID</strong> (เช่น @123abcde)</li>
+            <li>เปิดแอป LINE → เปิดกลุ่มไลน์ร้าน → กด ☰ → <span class="key">เชิญ</span> → ค้นหา Bot ID → เพิ่มเข้ากลุ่ม</li>
+            <li>กลับไปที่ <a href="https://developers.line.biz" target="_blank">developers.line.biz</a> → ช่อง <span class="key">Webhook URL</span> → วาง Make.com webhook URL ที่ได้จาก Step 2 → กด <span class="key" style="background:#E8F5E9;color:#06C755;">Update</span> แล้วเปิด <span class="key" style="background:#E8F5E9;color:#06C755;">Use webhook: ON</span></li>
+            <li>ใน Make.com → กด <span class="key pur">Run once</span> (รอรับข้อมูล) → แล้วพิมพ์ข้อความอะไรก็ได้ในกลุ่มไลน์</li>
+            <li>Make.com จะแสดงข้อมูลที่รับได้ → มองหา <code>source &gt; groupId</code> → คัดลอกค่าที่ขึ้นต้นด้วย <strong>C</strong> (เช่น <code>Cabc123...</code>) → เก็บไว้ใช้ใน Step 2</li>
+          </ol>
+          <div class="note">💡 ถ้ากลุ่มมีสมาชิกหลายคน ต้องให้คนที่เชิญ bot เป็น Admin ของกลุ่มด้วย</div>
+        </div>
+      </div>
+
+      <!-- STEP 2: Make.com -->
+      <div class="step-block">
+        <div class="step-title">
+          <span class="step-num" style="background:#6D00CC;">2</span>
+          ⚙️ ตั้งค่า Make.com (เชื่อม Google Sheets + LINE)
+        </div>
+        <div class="step-content">
+          <ol>
+            <li>สมัคร <a href="https://make.com" target="_blank">make.com</a> ฟรี → กด <span class="key pur">Create new scenario</span></li>
+            <li>เพิ่ม module แรก → ค้นหา <span class="key pur">Webhooks</span> → เลือก <span class="key pur">Custom webhook</span> → กด <span class="key pur">Add</span> → <strong>Copy URL ที่ได้ไปใส่ใน Step 1B ด้วย</strong></li>
+            <li>กด <strong>＋</strong> → ค้นหา <span class="key">Google Sheets</span> → เลือก <span class="key">Add a Row</span><br>
+                → เชื่อมบัญชี Google → เลือก Spreadsheet: <em>ร้านนมตุ๋น</em> → Sheet: <em>ข้อมูลรายวัน</em><br>
+                → Map ข้อมูล: วันที่=<code>date</code> · เงินทอน=<code>float</code> · เงินสดรับ=<code>cashIn</code> · น้ำแข็ง=<code>ice</code> · ค่าอื่น=<code>otherCost</code> · รายละเอียด=<code>costDetails</code> · สุทธิ=<code>net</code> · รวมแก้ว=<code>total</code> · เย็น=<code>cold</code> · ร้อน(แก้ว)=<code>hotG</code> · ร้อน(ถุง)=<code>hotB</code> · ขวด=<code>bottle</code> · เหลือ=<code>leftItems</code> · หมด=<code>outItems</code> · หมายเหตุ=<code>note</code> · ผู้บันทึก=<code>recorder</code> · เวลา=<code>timestamp</code></li>
+            <li>กด <strong>＋</strong> อีกครั้ง → ค้นหา <span class="key" style="background:#E8F5E9;color:#06C755;">HTTP</span> → เลือก <span class="key" style="background:#E8F5E9;color:#06C755;">Make a request</span><br>
+                URL: <code>https://api.line.me/v2/bot/message/push</code><br>
+                Method: <code>POST</code><br>
+                Headers: <code>Authorization: Bearer {Channel Access Token จาก Step 1A}</code><br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<code>Content-Type: application/json</code><br>
+                Body type: <code>Raw</code> · Content type: <code>application/json</code><br>
+                Body:
+                <pre style="background:#F0F4F8;border-radius:6px;padding:10px;font-size:.78rem;margin-top:6px;overflow-x:auto;">{"to":"GROUP_ID_จาก_Step_1B","messages":[{"type":"text","text":"{{lineMessage}}"}]}</pre>
+                (แทนที่ <code>GROUP_ID_จาก_Step_1B</code> ด้วย groupId ที่คัดลอกมา · แทนที่ <code>{{lineMessage}}</code> ด้วยการเลือก <code>lineMessage</code> จาก dropdown ของ Make.com)
+            </li>
+            <li>กด <span class="key pur">Run once</span> → กด บันทึก ในฟอร์ม → ตรวจสอบว่า Make.com รับข้อมูลและส่งได้ → กด <span class="key pur">OK</span></li>
+            <li>เปิด <span class="key pur">Scheduling: ON</span> → กด <span class="key pur">Save</span></li>
+          </ol>
+          <div class="note">💡 ดู <a href="https://www.make.com/en/help/tutorials" target="_blank">วิดีโอสอน Make.com</a> ถ้าติด</div>
+        </div>
+      </div>
+
+      <!-- STEP 3: Netlify -->
+      <div class="step-block">
+        <div class="step-title">
+          <span class="step-num" style="background:#0EA5E9;">3</span>
+          🌐 แชร์ฟอร์มให้พนักงานกรอกผ่านอินเทอร์เน็ต (Netlify)
+        </div>
+        <div class="step-content">
+          <ol>
+            <li>เปิดเว็บ <a href="https://app.netlify.com/drop" target="_blank">app.netlify.com/drop</a></li>
+            <li>ลาก-วางไฟล์ <strong>แบบฟอร์มกรอกยอดขาย_ร้านนมตุ๋น.html</strong> ลงในหน้าเว็บ</li>
+            <li>รอสักครู่ → จะได้ URL เช่น <code>amazing-shop-12345.netlify.app</code></li>
+            <li>ส่ง URL นั้นให้พนักงานแต่ละคน → เปิดในโทรศัพท์ได้เลย</li>
+          </ol>
+          <div class="note">📌 ถ้าแก้ไขฟอร์ม ให้อัปโหลดไฟล์ใหม่อีกครั้ง · ข้อมูลแต่ละคนบันทึกในเครื่องตัวเอง แต่ส่งไปรวมใน Google Sheets โดยอัตโนมัติ</div>
+        </div>
+      </div>
+
+      <!-- Webhook URL Input -->
+      <div class="modal-url-section">
+        <div class="modal-url-label">🔗 วาง Make.com Webhook URL ที่นี่ (จาก Step 2)</div>
+        <div class="url-row">
+          <input type="text" id="script_url" placeholder="https://hook.eu1.make.com/xxxxxxxxxx">
+          <button class="btn-test" onclick="testConn()">🔌 ทดสอบ</button>
+          <button class="btn-save-url" onclick="saveUrl()">💾 บันทึก</button>
+        </div>
+        <div class="conn-status" id="conn_status"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ ข้อมูลพื้นฐาน ════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-title"><div class="card-title-l">📅 ข้อมูลพื้นฐาน</div></div>
+  <div class="g3">
+    <div class="field">
+      <label>วันที่<span class="req">*</span></label>
+      <input type="date" id="f_date" required>
+    </div>
+    <div class="field">
+      <label>ผู้บันทึก</label>
+      <input type="text" id="f_recorder" placeholder="ชื่อ...">
+    </div>
+    <div class="field">
+      <label>หมายเหตุทั่วไป</label>
+      <input type="text" id="f_note" placeholder="เช่น พี่บิ๊กเบิก 400">
+    </div>
+  </div>
+</div>
+
+<!-- ══ เงินสด ═══════════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-title"><div class="card-title-l">💰 เงินสด</div></div>
+  <div class="g3" style="margin-bottom:13px;">
+    <div class="field">
+      <label>เงินทอนเริ่มต้น ฿<span class="sub">(นำไปเปิดร้าน)</span></label>
+      <input type="number" id="f_float" placeholder="0" min="0" oninput="calcNet()">
+    </div>
+    <div class="field">
+      <label>เงินสดรับรวม ฿<span class="req">*</span><span class="sub">(รวมเงินทอน)</span></label>
+      <input type="number" id="f_cash_in" placeholder="0" min="0" oninput="calcNet()">
+    </div>
+    <div class="field">
+      <label>ค่าน้ำแข็ง ฿</label>
+      <input type="number" id="f_ice" placeholder="0" min="0" oninput="calcNet()">
+      <div class="hint">เช่น 160, 200, 240, 280</div>
+    </div>
+  </div>
+  <div style="margin-bottom:11px;">
+    <div style="font-size:.8rem;font-weight:700;color:var(--gd);margin-bottom:7px;">💸 ค่าใช้จ่ายอื่นๆ (ระบุรายการ)</div>
+    <div class="cost-rows" id="cost_rows"></div>
+    <button class="btn-add-c" onclick="addCostRow()">＋ เพิ่มรายการ</button>
+  </div>
+  <div class="computed" id="net_box">
+    <div class="lbl">เงินสดสุทธิ (หลังหักทุกอย่าง)</div>
+    <div class="val" id="net_display">฿ 0</div>
+  </div>
+</div>
+
+<!-- ══ ยอดขาย ════════════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-title"><div class="card-title-l">🥛 ยอดขาย</div></div>
+  <div class="g4">
+    <div class="field"><label>แก้วเย็น</label><input type="number" id="f_cold" placeholder="0" min="0" oninput="calcTotal()"></div>
+    <div class="field"><label>แก้วร้อน (แก้ว)</label><input type="number" id="f_hot_glass" placeholder="0" min="0" oninput="calcTotal()"></div>
+    <div class="field"><label>แก้วร้อน (ถุง)</label><input type="number" id="f_hot_bag" placeholder="0" min="0" oninput="calcTotal()"><div class="hint">ถุงละ ~5 แก้ว</div></div>
+    <div class="field"><label>นมขวด</label><input type="number" id="f_bottle" placeholder="0" min="0"></div>
+  </div>
+  <div class="computed blue" style="margin-top:11px;">
+    <div class="lbl">ยอดรวม</div>
+    <div class="val" id="total_display">0 แก้ว</div>
+  </div>
+</div>
+
+<!-- ══ สต็อก ══════════════════════════════════════════════════ -->
+<div class="card">
+  <div class="card-title">
+    <div class="card-title-l">📦 สถานะสต็อก</div>
+    <button class="btn-edit-mode" id="btn_edit_mode" onclick="toggleEditMode()">✏️ แก้ไขรายการ</button>
+  </div>
+  <div class="inv-toolbar" id="inv_legend">
+    <div class="legend-row">
+      <span class="legend-txt"><span class="legend-dot" style="background:#BDBDBD;border:2px solid #9E9E9E;"></span>ปกติ</span>
+      <span class="legend-txt"><span class="legend-dot" style="background:#F9A825;"></span>เหลือ (คลิก 1×)</span>
+      <span class="legend-txt"><span class="legend-dot" style="background:var(--rd);"></span>หมด (คลิก 2×)</span>
+      <span class="legend-txt" style="font-size:.7rem;color:#BDBDBD;">3× = ปกติ</span>
+    </div>
+  </div>
+  <div class="edit-banner" id="edit_banner">✏️ โหมดแก้ไข — เพิ่ม/ลบ/แก้ชื่อรายการได้ · กด "เสร็จแล้ว" เมื่อเสร็จ</div>
+  <div class="quick-add-row" id="quick_add_row">
+    <input type="text" id="quick_inp" placeholder="＋ เพิ่มรายการด่วน แล้วกด Enter" onkeydown="if(event.key==='Enter') quickAdd()">
+    <button class="btn-quick" onclick="quickAdd()">＋ เพิ่ม</button>
+  </div>
+  <div id="inv_container" style="margin-top:12px;"></div>
+  <div class="add-cat-row" id="add_cat_row">
+    <input class="add-cat-inp" type="text" id="new_cat_inp" placeholder="ชื่อหมวดหมู่ใหม่...">
+    <button class="btn-add-cat" onclick="addCategory()">＋ เพิ่มหมวด</button>
+  </div>
+</div>
+
+<!-- ══ Actions ══════════════════════════════════════════════ -->
+<div class="card">
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="saveRecord()">💾 บันทึก + ส่ง LINE & Sheets</button>
+    <button class="btn btn-secondary" onclick="clearForm()">🔄 ล้างฟอร์ม</button>
+  </div>
+</div>
+
+<!-- ══ Records ══════════════════════════════════════════════ -->
+<div class="card" id="records_section" style="display:none;">
+  <div class="card-title">
+    <div class="card-title-l">📋 ประวัติการบันทึก <span id="rec_count" style="font-size:.8rem;font-weight:400;color:var(--mu);"></span></div>
+  </div>
+  <div class="stats-row" id="summary_stats"></div>
+
+  <div class="sync-bar" id="sync_bar" style="margin-top:10px;">
+    <span id="sync_txt">—</span>
+    <button class="btn-sync-all" id="btn_sync_all" onclick="syncAll()">📤 ส่งทั้งหมดอีกครั้ง</button>
+  </div>
+
+  <div class="rec-wrap">
+    <table>
+      <thead>
+        <tr><th>วันที่</th><th>เงินทอน</th><th>รับ ฿</th><th>หัก ฿</th><th>สุทธิ ฿</th><th>ยอด</th><th>เย็น</th><th>ร้อน</th><th>ค่าใช้จ่าย</th><th>ของเหลือ</th><th>ของหมด</th><th>หมายเหตุ</th><th>โดย</th><th>ส่ง</th><th></th></tr>
+      </thead>
+      <tbody id="records_body"></tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:12px;display:flex;gap:9px;flex-wrap:wrap;">
+    <button class="btn btn-secondary" onclick="showTSV()" style="font-size:.8rem;padding:7px 14px;">📋 Copy ข้อมูล (สำรอง)</button>
+    <button class="btn btn-danger-s" onclick="clearAll()" style="font-size:.8rem;padding:7px 14px;">🗑️ ลบทั้งหมด</button>
+  </div>
+  <div class="export-box" id="export_box" style="display:none;">
+    <strong style="font-size:.8rem;">วางใน Google Sheets:</strong>
+    <textarea id="csv_out" readonly onclick="this.select()"></textarea>
+    <button class="btn btn-secondary" onclick="copyTSV()" style="margin-top:6px;font-size:.78rem;padding:5px 12px;">📋 คัดลอก</button>
+  </div>
+</div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  CATALOG
+// ════════════════════════════════════════════════════════
+const DEFAULT_CATALOG=[
+  {cat:"🥛 นม / วัตถุดิบหลัก",items:["นมตุ๋น","นมผสม","นมขนหวาน","นมขนจืด","นม (นมสด)","โยเกิร์ต","น้ำผึ้ง"]},
+  {cat:"🧴 ซอส / แยม / ไซรัป",items:["คาราเมล","ซอสมะม่วง","ซอสมิกซ์","แยมสตอ","ไซรัปมะม่วง","โอวัลติน","ไวท์มอลต์","โกโก้","ผงมัทฉะ","ผงนัว","ผงปั่น"]},
+  {cat:"🧁 ท็อปปิ้ง / อื่นๆ",items:["โอริโอ้","ปีโป้","เผือก","นูเทลล่า","มะม่วง (ผลไม้)"]},
+  {cat:"🥤 ภาชนะ / บรรจุภัณฑ์",items:["แก้วเย็น","แก้วร้อน","ฝาโดม","หลอดเย็น","หลอดไข่มุก","ถุงทิ้วแก้ว","ถุงเย็น 10×15"]},
+  {cat:"🧹 อุปกรณ์ / สิ่งของ",items:["ทิชชู่","เมจิกคลีน","ผงซักฟอก","น้ำถัง","น้ำแดงเฮลบูบอย"]}
+];
+
+let catalog  = JSON.parse(localStorage.getItem('nmtun_catalog')||'null')||deepCopy(DEFAULT_CATALOG);
+let invState = {};
+let editMode = false;
+let records  = JSON.parse(localStorage.getItem('nmtun_v2')||'[]');
+let hookUrl  = localStorage.getItem('nmtun_hook')||'';
+let costRowId= 0;
+
+function saveCatalog(){localStorage.setItem('nmtun_catalog',JSON.stringify(catalog));}
+function deepCopy(o){return JSON.parse(JSON.stringify(o));}
+
+// ════════════════════════════════════════════════════════
+//  SETUP MODAL
+// ════════════════════════════════════════════════════════
+function openSetup(){
+  document.getElementById('setup_modal').classList.add('show');
+  if(hookUrl) document.getElementById('script_url').value=hookUrl;
+}
+function closeSetup(){document.getElementById('setup_modal').classList.remove('show');}
+document.getElementById('setup_modal').addEventListener('click',function(e){if(e.target===this)closeSetup();});
+
+function saveUrl(){
+  const v=document.getElementById('script_url').value.trim();
+  if(!v){showToast('กรุณาใส่ URL','er');return;}
+  hookUrl=v; localStorage.setItem('nmtun_hook',v);
+  updateHdrBtn(); renderSyncBar();
+  showToast('✅ บันทึก URL สำเร็จ');
+  closeSetup();
+}
+
+async function testConn(){
+  const url=document.getElementById('script_url').value.trim();
+  if(!url){showToast('ใส่ URL ก่อน','er');return;}
+  const st=document.getElementById('conn_status');
+  st.innerHTML='<span style="color:var(--yd)">⏳ กำลังทดสอบ...</span>';
+  try{
+    await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({test:true,message:'🐄 ทดสอบการเชื่อมต่อร้านนมตุ๋น'})});
+    st.innerHTML='<span style="color:var(--gd);font-weight:700;">✅ ส่งข้อมูลไป Make.com ได้แล้ว!</span> <span style="font-size:.74rem;color:var(--mu);">(ตรวจสอบใน Make.com ว่าได้รับหรือไม่)</span>';
+  }catch(e){
+    st.innerHTML='<span style="color:var(--rd);font-weight:700;">❌ เชื่อมต่อไม่ได้:</span> '+e.message;
+  }
+}
+
+function updateHdrBtn(){
+  const b=document.getElementById('btn_setup');
+  b.textContent=hookUrl?'✅ เชื่อมต่อแล้ว':'⚙️ ตั้งค่าเชื่อมต่อ';
+  b.className='btn-hdr'+(hookUrl?' on':'');
+  document.getElementById('hdr_sub').textContent=hookUrl?'เชื่อมต่อ LINE & Google Sheets แล้ว':'บันทึกยอดขายประจำวัน';
+}
+
+// ════════════════════════════════════════════════════════
+//  LINE MESSAGE FORMATTER
+// ════════════════════════════════════════════════════════
+function buildLineMsg(r){
+  const ice=r.ice||0;
+  const oc=(r.costs||[]).reduce((s,c)=>s+c.amt,0);
+  const costDetail=(r.costs||[]).filter(c=>c.amt||c.desc).map(c=>c.desc?`${c.desc} ฿${c.amt}`:`฿${c.amt}`).join(', ');
+  const leftStr=(r.leftItems||[]).join(', ')||'ไม่มี';
+  const outStr=(r.outItems||[]).join(', ')||'ไม่มี';
+  const lines=[
+    `🐄 ร้านนมตุ๋น — ยอดขายประจำวัน`,
+    `📅 วันที่ ${fmtDate(r.date)}${r.recorder?' | 👤 '+r.recorder:''}`,
+    ``,
+    `💰 เงินสดสุทธิ: ฿${fmt(r.net)}`,
+    `   รับ ฿${fmt(r.cashIn)} | น้ำแข็ง ฿${fmt(ice)}${oc?` | อื่นๆ ฿${fmt(oc)} (${costDetail})`:''}`,
+    ``,
+    `🥛 ยอดขาย: ${fmt(r.total)} แก้ว`,
+    `   เย็น: ${r.cold||0} | ร้อน: ${r.hotG||0} แก้ว${r.hotB?` / ${r.hotB} ถุง`:''}`,
+    ``,
+    `⚠️ ของเหลือ: ${leftStr}`,
+    `❌ ของหมด: ${outStr}`,
+  ];
+  if(r.note) lines.push(`📝 หมายเหตุ: ${r.note}`);
+  return lines.join('\n');
+}
+
+// ════════════════════════════════════════════════════════
+//  SEND TO MAKE.COM
+// ════════════════════════════════════════════════════════
+async function sendToMake(rec, btnEl){
+  if(!hookUrl){showToast('ยังไม่ได้ตั้งค่า URL — กด ⚙️ ตั้งค่า','er');return false;}
+  if(btnEl){btnEl.disabled=true;btnEl.className='btn-sm-sync ing';btnEl.textContent='⏳';}
+
+  const otherCost=(rec.costs||[]).reduce((s,c)=>s+c.amt,0);
+  const payload={
+    date:     fmtDate(rec.date),
+    dateISO:  rec.date,
+    recorder: rec.recorder||'',
+    float:    rec.float||0,
+    cashIn:   rec.cashIn||0,
+    ice:      rec.ice||0,
+    otherCost,
+    costDetails:(rec.costs||[]).filter(c=>c.amt||c.desc).map(c=>c.desc?`${c.desc}(฿${c.amt})`:`฿${c.amt}`).join(', '),
+    net:      rec.net||0,
+    total:    rec.total||0,
+    cold:     rec.cold||0,
+    hotG:     rec.hotG||0,
+    hotB:     rec.hotB||0,
+    bottle:   rec.bottle||0,
+    leftItems:(rec.leftItems||[]).join(', '),
+    outItems: (rec.outItems||[]).join(', '),
+    note:     rec.note||'',
+    timestamp:new Date().toLocaleString('th-TH',{timeZone:'Asia/Bangkok'}),
+    lineMessage: buildLineMsg(rec)
+  };
+
+  try{
+    await fetch(hookUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+    if(btnEl){btnEl.className='btn-sm-sync done';btnEl.textContent='✅';btnEl.disabled=false;}
+    const idx=records.findIndex(r=>r.date===rec.date);
+    if(idx>=0){records[idx].synced=true;localStorage.setItem('nmtun_v2',JSON.stringify(records));}
+    return true;
+  }catch(e){
+    if(btnEl){btnEl.className='btn-sm-sync err';btnEl.textContent='❌';btnEl.disabled=false;}
+    showToast('ส่งไม่ได้: '+e.message,'er');
+    return false;
+  }
+}
+
+async function syncAll(){
+  if(!hookUrl){showToast('ยังไม่ได้ตั้งค่า URL','er');return;}
+  const btn=document.getElementById('btn_sync_all');
+  btn.disabled=true; btn.textContent='⏳ กำลังส่ง...';
+  let ok=0,fail=0;
+  for(const r of records){
+    try{
+      await fetch(hookUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({date:fmtDate(r.date),dateISO:r.date,recorder:r.recorder||'',float:r.float||0,cashIn:r.cashIn||0,ice:r.ice||0,otherCost:(r.costs||[]).reduce((s,c)=>s+c.amt,0),costDetails:(r.costs||[]).map(c=>c.desc?`${c.desc}(฿${c.amt})`:`฿${c.amt}`).join(', '),net:r.net||0,total:r.total||0,cold:r.cold||0,hotG:r.hotG||0,hotB:r.hotB||0,bottle:r.bottle||0,leftItems:(r.leftItems||[]).join(', '),outItems:(r.outItems||[]).join(', '),note:r.note||'',timestamp:new Date().toLocaleString('th-TH',{timeZone:'Asia/Bangkok'}),lineMessage:buildLineMsg(r)})});
+      r.synced=true; ok++;
+    }catch(e){fail++;}
+    await new Promise(res=>setTimeout(res,350));
+  }
+  localStorage.setItem('nmtun_v2',JSON.stringify(records));
+  btn.disabled=false; btn.textContent='📤 ส่งทั้งหมดอีกครั้ง';
+  showToast(`✅ ส่ง ${ok} วัน${fail?` · ล้มเหลว ${fail} วัน`:''}`,ok>0?'ok':'er');
+  renderTable();
+}
+
+// ════════════════════════════════════════════════════════
+//  EDIT MODE
+// ════════════════════════════════════════════════════════
+function toggleEditMode(){
+  editMode=!editMode;
+  document.getElementById('btn_edit_mode').textContent=editMode?'✅ เสร็จแล้ว':'✏️ แก้ไขรายการ';
+  document.getElementById('btn_edit_mode').className='btn-edit-mode'+(editMode?' active':'');
+  document.getElementById('edit_banner').className='edit-banner'+(editMode?' show':'');
+  document.getElementById('inv_legend').style.display=editMode?'none':'flex';
+  document.getElementById('quick_add_row').style.display=editMode?'none':'flex';
+  document.getElementById('add_cat_row').style.display=editMode?'flex':'none';
+  buildInventory();
+}
+
+function quickAdd(){
+  const inp=document.getElementById('quick_inp');
+  const n=inp.value.trim(); if(!n) return;
+  for(const s of catalog){if(s.items.includes(n)){showToast('⚠️ "'+n+'" มีอยู่แล้ว');inp.value='';return;}}
+  catalog[catalog.length-1].items.push(n); saveCatalog();
+  inp.value=''; invState[n]='left'; buildInventory();
+  showToast('✅ เพิ่ม "'+n+'" แล้ว');
+}
+
+function addCategory(){const inp=document.getElementById('new_cat_inp');const n=inp.value.trim();if(!n)return;catalog.push({cat:n,items:[]});saveCatalog();inp.value='';buildInventory();}
+function deleteCategory(i){if(!confirm(`ลบหมวด "${catalog[i].cat}"?`))return;catalog.splice(i,1);saveCatalog();buildInventory();}
+function addItemToCategory(ci){const inp=document.getElementById('add_inp_'+ci);const n=inp.value.trim();if(!n)return;for(const s of catalog){if(s.items.includes(n)){showToast('⚠️ มีอยู่แล้ว');inp.value='';return;}}catalog[ci].items.push(n);saveCatalog();inp.value='';buildInventory();}
+function removeItem(ci,ii){catalog[ci].items.splice(ii,1);saveCatalog();buildInventory();}
+function updateCatName(ci,v){catalog[ci].cat=v;saveCatalog();}
+
+// ════════════════════════════════════════════════════════
+//  BUILD INVENTORY
+// ════════════════════════════════════════════════════════
+function buildInventory(){
+  const cont=document.getElementById('inv_container');
+  cont.innerHTML=''; cont.className=editMode?'edit-mode-active':'';
+  catalog.forEach((sec,ci)=>{
+    const blk=document.createElement('div');blk.className='cat-block '+(editMode?'edit-mode-section':'');
+    const hd=document.createElement('div');hd.className='cat-head '+(editMode?'edit-mode':'');
+    const lbl=document.createElement('span');lbl.className='cat-label';lbl.textContent=sec.cat;
+    const ni=document.createElement('input');ni.className='cat-name-inp';ni.value=sec.cat;ni.oninput=e=>updateCatName(ci,e.target.value);
+    const db=document.createElement('button');db.className='btn-del-cat';db.textContent='🗑️ ลบหมวด';db.onclick=()=>deleteCategory(ci);
+    hd.appendChild(lbl);hd.appendChild(ni);hd.appendChild(db);blk.appendChild(hd);
+    const grid=document.createElement('div');grid.className='inv-grid';
+    sec.items.forEach((name,ii)=>grid.appendChild(makeChip(name,ci,ii)));
+    blk.appendChild(grid);
+    const ar=document.createElement('div');ar.className='add-item-row';
+    const ai=document.createElement('input');ai.type='text';ai.className='add-item-inp';ai.id='add_inp_'+ci;ai.placeholder='ชื่อรายการใหม่...';ai.onkeydown=e=>{if(e.key==='Enter')addItemToCategory(ci);};
+    const ab=document.createElement('button');ab.className='btn-add-item';ab.textContent='＋ เพิ่ม';ab.onclick=()=>addItemToCategory(ci);
+    ar.appendChild(ai);ar.appendChild(ab);blk.appendChild(ar);
+    cont.appendChild(blk);
+  });
+}
+
+function makeChip(name,ci,ii){
+  const st=invState[name]||'normal';
+  const div=document.createElement('div');div.dataset.name=name;
+  if(editMode){
+    div.className='inv-item edit-mode-chip';
+    const lbl=document.createElement('span');lbl.textContent=name;div.appendChild(lbl);
+    const rm=document.createElement('button');rm.className='chip-rm';rm.textContent='✕';rm.onclick=e=>{e.stopPropagation();removeItem(ci,ii);};div.appendChild(rm);
+  }else{
+    div.className='inv-item'+(st==='left'?' left':st==='out'?' out':'');
+    const dot=document.createElement('span');dot.className='s-dot';div.appendChild(dot);
+    div.appendChild(document.createTextNode(name));
+    const qw=document.createElement('span');qw.className='qty-wrap';
+    const qi=document.createElement('input');qi.type='text';qi.className='qty-inp';qi.placeholder='จำนวน...';qi.value=invState[name+'__qty']||'';
+    qi.addEventListener('click',e=>e.stopPropagation());
+    qi.addEventListener('input',e=>{invState[name+'__qty']=e.target.value;});
+    qw.appendChild(qi);div.appendChild(qw);
+    div.addEventListener('click',()=>cycleState(name));
+  }
+  return div;
+}
+
+function cycleState(name){
+  const cur=invState[name]||'normal';
+  invState[name]=cur==='normal'?'left':cur==='left'?'out':'normal';
+  if(invState[name]!=='left')delete invState[name+'__qty'];
+  const old=document.querySelector(`.inv-item[data-name="${CSS.escape(name)}"]`);
+  if(old){let ci=-1,ii=-1;catalog.forEach((s,c)=>{const i=s.items.indexOf(name);if(i>=0){ci=c;ii=i;}});old.replaceWith(makeChip(name,ci,ii));}
+}
+function resetInventory(){invState={};buildInventory();}
+
+// ════════════════════════════════════════════════════════
+//  COST ROWS
+// ════════════════════════════════════════════════════════
+function addCostRow(amt='',desc=''){
+  const id='cr_'+(costRowId++);
+  const div=document.createElement('div');div.className='cost-row';div.id=id;
+  div.innerHTML=`<input type="number" placeholder="฿ จำนวน" min="0" value="${amt}" oninput="calcNet()" class="cost-amt"><input type="text" placeholder="รายละเอียด เช่น ค่าทิชชู่" value="${desc}" class="cost-desc"><button class="btn-rm" onclick="document.getElementById('${id}').remove();calcNet()">✕</button>`;
+  document.getElementById('cost_rows').appendChild(div);calcNet();
+}
+function getCostRows(){return[...document.querySelectorAll('.cost-row')].map(r=>({amt:parseFloat(r.querySelector('.cost-amt').value)||0,desc:r.querySelector('.cost-desc').value.trim()})).filter(r=>r.amt||r.desc);}
+function clearCostRows(){document.getElementById('cost_rows').innerHTML='';costRowId=0;calcNet();}
+
+// ════════════════════════════════════════════════════════
+//  CALCULATIONS
+// ════════════════════════════════════════════════════════
+function pf(id){return parseFloat(document.getElementById(id).value)||0;}
+function calcNet(){
+  const net=pf('f_cash_in')-pf('f_float')-pf('f_ice')-getCostRows().reduce((s,r)=>s+r.amt,0);
+  document.getElementById('net_display').textContent='฿ '+fmt(net);
+  document.getElementById('net_box').className='computed'+(net<0?' neg':'');
+}
+function calcTotal(){document.getElementById('total_display').textContent=fmt(pf('f_cold')+pf('f_hot_glass')+pf('f_hot_bag'))+' แก้ว';}
+
+// ════════════════════════════════════════════════════════
+//  SAVE / EDIT / DELETE
+// ════════════════════════════════════════════════════════
+function buildRecord(){
+  const costs=getCostRows();
+  const leftItems=[],outItems=[];
+  catalog.forEach(sec=>sec.items.forEach(name=>{
+    const st=invState[name]||'normal';
+    if(st==='left'){const q=invState[name+'__qty']||'';leftItems.push(q?`${name} (${q})`:name);}
+    else if(st==='out')outItems.push(name);
+  }));
+  return{date:document.getElementById('f_date').value,cashIn:pf('f_cash_in'),float:pf('f_float'),ice:pf('f_ice'),costs,net:pf('f_cash_in')-pf('f_float')-pf('f_ice')-costs.reduce((s,r)=>s+r.amt,0),cold:pf('f_cold'),hotG:pf('f_hot_glass'),hotB:pf('f_hot_bag'),bottle:pf('f_bottle'),total:pf('f_cold')+pf('f_hot_glass')+pf('f_hot_bag'),leftItems,outItems,recorder:document.getElementById('f_recorder').value.trim(),note:document.getElementById('f_note').value.trim(),ts:Date.now(),synced:false};
+}
+
+async function saveRecord(){
+  const rec=buildRecord();
+  if(!rec.date){alert('กรุณาเลือกวันที่');return;}
+  const ei=records.findIndex(r=>r.date===rec.date);
+  if(ei>=0){if(!confirm(`วันที่ ${fmtDate(rec.date)} มีอยู่แล้ว แก้ไขหรือไม่?`))return;records[ei]=rec;}
+  else records.push(rec);
+  records.sort((a,b)=>a.date.localeCompare(b.date));
+  localStorage.setItem('nmtun_v2',JSON.stringify(records));
+
+  if(hookUrl){
+    showToast('⏳ กำลังส่ง LINE & Google Sheets...','in');
+    const ok=await sendToMake(rec,null);
+    showToast(ok?'✅ บันทึก + ส่ง LINE & Sheets สำเร็จ!':'💾 บันทึกแล้ว แต่ส่งไม่ได้ (กด ส่งซ้ำ)',ok?'ok':'er');
+  }else{
+    showToast('💾 บันทึกแล้ว (ยังไม่ได้ตั้งค่าเชื่อมต่อ)','in');
+  }
+  clearForm();renderTable();
+}
+
+function deleteRecord(idx){if(!confirm('ลบข้อมูลวันนี้?'))return;records.splice(idx,1);localStorage.setItem('nmtun_v2',JSON.stringify(records));renderTable();}
+
+function editRecord(idx){
+  const r=records[idx];
+  document.getElementById('f_date').value=r.date;
+  document.getElementById('f_cash_in').value=r.cashIn||'';
+  document.getElementById('f_float').value=r.float||'';
+  document.getElementById('f_ice').value=r.ice||'';
+  document.getElementById('f_cold').value=r.cold||'';
+  document.getElementById('f_hot_glass').value=r.hotG||'';
+  document.getElementById('f_hot_bag').value=r.hotB||'';
+  document.getElementById('f_bottle').value=r.bottle||'';
+  document.getElementById('f_recorder').value=r.recorder||'';
+  document.getElementById('f_note').value=r.note||'';
+  clearCostRows();(r.costs||[]).forEach(c=>addCostRow(c.amt,c.desc));
+  invState={};
+  (r.leftItems||[]).forEach(s=>{const m=s.match(/^(.+?)\s*\((.+)\)$/);const n=m?m[1].trim():s.trim();invState[n]='left';if(m)invState[n+'__qty']=m[2];});
+  (r.outItems||[]).forEach(n=>{invState[n]='out';});
+  buildInventory();calcNet();calcTotal();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function clearAll(){if(!confirm('ลบข้อมูลทั้งหมด?'))return;records=[];localStorage.setItem('nmtun_v2','[]');renderTable();}
+
+function clearForm(){
+  ['f_cash_in','f_float','f_ice','f_cold','f_hot_glass','f_hot_bag','f_bottle','f_recorder','f_note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f_date').value=todayISO();
+  clearCostRows();resetInventory();calcNet();calcTotal();
+}
+
+// ════════════════════════════════════════════════════════
+//  RENDER TABLE
+// ════════════════════════════════════════════════════════
+function renderSyncBar(){
+  const bar=document.getElementById('sync_bar'),txt=document.getElementById('sync_txt');
+  if(!records.length){bar.className='sync-bar';return;}
+  bar.className='sync-bar show';
+  const sy=records.filter(r=>r.synced).length,un=records.length-sy;
+  if(!hookUrl){txt.innerHTML='<span class="sync-badge sb-none">⚙️ ยังไม่ได้ตั้งค่า</span>';document.getElementById('btn_sync_all').style.display='none';}
+  else{document.getElementById('btn_sync_all').style.display='flex';txt.innerHTML=`<span class="sync-badge sb-ok">✅ ส่งแล้ว ${sy} วัน</span>${un?` <span class="sync-badge sb-wait">⏳ รอส่ง ${un} วัน</span>`:''}`;}
+}
+
+function renderTable(){
+  const sect=document.getElementById('records_section'),tbody=document.getElementById('records_body');
+  if(!records.length){sect.style.display='none';return;}
+  sect.style.display='block';
+  document.getElementById('rec_count').textContent=`(${records.length} วัน)`;
+  const tn=records.reduce((s,r)=>s+(r.net||0),0),tg=records.reduce((s,r)=>s+(r.total||0),0);
+  document.getElementById('summary_stats').innerHTML=`<span class="stat-p">💰 สุทธิรวม ฿${fmt(tn)}</span><span class="stat-p">🥛 รวม ${fmt(tg)} แก้ว</span><span class="stat-p">📈 เฉลี่ย/วัน ฿${fmt(Math.round(tn/records.length))}</span><span class="stat-p">🥤 เฉลี่ย ${Math.round(tg/records.length)} แก้ว/วัน</span>`;
+  renderSyncBar();
+  tbody.innerHTML='';
+  records.forEach((r,i)=>{
+    const cs=(r.costs||[]).map(c=>`<span class="chip cc">${c.desc?c.desc+' ':''} ฿${fmt(c.amt)}</span>`).join('')||'-';
+    const ls=(r.leftItems||[]).map(t=>`<span class="chip cl">⚠️${t}</span>`).join('')||'-';
+    const os=(r.outItems||[]).map(t=>`<span class="chip co">❌${t}</span>`).join('')||'-';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><strong>${fmtDate(r.date)}</strong></td><td>${fmt(r.float||0)}</td><td>${fmt(r.cashIn||0)}</td><td>${fmt((r.float||0)+(r.ice||0)+(r.costs||[]).reduce((s,c)=>s+c.amt,0))}</td><td><strong style="color:var(--gd)">${fmt(r.net||0)}</strong></td><td><strong>${fmt(r.total||0)}</strong></td><td>${r.cold||0}</td><td>${(r.hotG||0)+(r.hotB||0)}${r.hotB?' ('+r.hotB+'ถุง)':''}</td><td class="tdl">${cs}</td><td class="tdl">${ls}</td><td class="tdl">${os}</td><td class="tdl">${r.note||'-'}</td><td>${r.recorder||'-'}</td><td><button class="btn-sm-sync ${r.synced?'done':''}" id="sb${i}" onclick="sendToMake(records[${i}],this)">${r.synced?'✅':'📤'}</button></td><td style="white-space:nowrap;"><button onclick="editRecord(${i})" style="background:var(--bl);border:1px solid #90CAF9;border-radius:5px;padding:3px 7px;cursor:pointer;font-size:.72rem;color:var(--bd);">✏️</button><button onclick="deleteRecord(${i})" style="background:var(--rl);border:1px solid #EF9A9A;border-radius:5px;padding:3px 7px;cursor:pointer;font-size:.72rem;color:var(--rd);margin-left:3px;">🗑️</button></td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('export_box').style.display='none';
+}
+
+// ════════════════════════════════════════════════════════
+//  TSV / HELPERS
+// ════════════════════════════════════════════════════════
+function showTSV(){
+  const h=['วันที่','เงินทอน','รับ','น้ำแข็ง','ค่าอื่น','รายละเอียด','สุทธิ','ยอด','เย็น','ร้อน(แก้ว)','ร้อน(ถุง)','นมขวด','ของเหลือ','ของหมด','หมายเหตุ','ผู้บันทึก'];
+  const rows=records.map(r=>[fmtDate(r.date),r.float||0,r.cashIn||0,r.ice||0,(r.costs||[]).reduce((s,c)=>s+c.amt,0),(r.costs||[]).map(c=>c.desc?c.desc+'('+c.amt+')':c.amt).join(', '),r.net||0,r.total||0,r.cold||0,r.hotG||0,r.hotB||0,r.bottle||0,(r.leftItems||[]).join(', '),(r.outItems||[]).join(', '),r.note||'',r.recorder||'']);
+  document.getElementById('csv_out').value=[h,...rows].map(row=>row.join('\t')).join('\n');
+  document.getElementById('export_box').style.display='block';
+}
+function copyTSV(){document.getElementById('csv_out').select();document.execCommand('copy');showToast('📋 คัดลอกแล้ว!');}
+function fmt(n){return Number(n).toLocaleString('th-TH');}
+function todayISO(){return new Date().toISOString().split('T')[0];}
+function fmtDate(d){if(!d)return'';const[y,m,day]=d.split('-');return`${day}/${m}/${String(+y+543).slice(-2)}`;}
+function showToast(msg,type='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type;t.style.display='block';setTimeout(()=>{t.style.display='none';},3200);}
+function updateHeaderDate(){const d=new Date();const th=['อา','จ','อ','พ','พฤ','ศ','ส'][d.getDay()];document.getElementById('hdr_date').textContent=`${d.getDate()}/${d.getMonth()+1}/${String(d.getFullYear()+543).slice(-2)} (${th})`;}
+
+// INIT
+document.getElementById('f_date').value=todayISO();
+updateHeaderDate();
+updateHdrBtn();
+buildInventory();
+renderTable();
+calcNet();
+calcTotal();
+</script>
+</body>
+</html>
