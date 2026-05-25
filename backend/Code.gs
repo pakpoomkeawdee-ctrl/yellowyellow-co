@@ -41,6 +41,106 @@ const TABS = {
   Monthly:     ['month','store','revenue','orders','avgTicket','foodCost','laborCost','expenses','netProfit'],
 };
 
+/* ---------- Thai labels (display in Google Sheet) ---------- */
+// ชื่อแท็บภาษาไทย
+const SHEET_NAMES_TH = {
+  Orders:       'ออเดอร์',
+  OrderLines:   'รายการในออเดอร์',
+  Products:     'สินค้า',
+  Inventory:    'สต็อก',
+  InventoryLog: 'ประวัติสต็อก',
+  Sales:        'ยอดขาย',
+  Expenses:     'ค่าใช้จ่าย',
+  Employees:    'พนักงาน',
+  Suppliers:    'ซัพพลายเออร์',
+  KPI:          'ตัวชี้วัด',
+  Daily:        'สรุปรายวัน',
+  Monthly:      'สรุปรายเดือน',
+};
+
+// ชื่อคอลัมน์ภาษาไทย (key ภายในระบบ → label ที่แสดงในชีต)
+const LABEL_TH = {
+  orderId:       'รหัสออเดอร์',
+  lineId:        'รหัสรายการ',
+  itemId:        'รหัสเมนู',
+  id:            'รหัส',
+  store:         'ร้าน',
+  status:        'สถานะ',
+  type:          'ประเภท',
+  table:         'โต๊ะ',
+  customer:      'ลูกค้า',
+  subtotal:      'ยอดก่อนหัก',
+  discount:      'ส่วนลด',
+  tax:           'ภาษี',
+  total:         'ยอดรวม',
+  paid:          'จ่าย',
+  change:        'เงินทอน',
+  paymentMethod: 'วิธีชำระเงิน',
+  cashier:       'พนักงานขาย',
+  note:          'หมายเหตุ',
+  synced:        'ซิงค์แล้ว',
+  dateISO:       'วันที่',
+  createdAt:     'สร้างเมื่อ',
+  updatedAt:     'อัปเดตเมื่อ',
+  th:            'ชื่อภาษาไทย',
+  en:            'ชื่อภาษาอังกฤษ',
+  qty:           'จำนวน',
+  unitPrice:     'ราคา/หน่วย',
+  temp:          'อุณหภูมิ',
+  size:          'ขนาด',
+  protein:       'เนื้อสัตว์',
+  sauce:         'น้ำจิ้ม',
+  sweet:         'ระดับหวาน',
+  spice:         'ระดับเผ็ด',
+  mods:          'ท็อปปิ้ง/เพิ่ม',
+  cat:           'หมวด',
+  basePrice:     'ราคา',
+  cost:          'ต้นทุน',
+  active:        'ใช้งาน',
+  imageUrl:      'รูปภาพ',
+  category:      'หมวด',
+  name:          'ชื่อ',
+  unit:          'หน่วย',
+  onHand:        'คงเหลือ',
+  par:           'ขั้นต่ำ',
+  reorderAt:     'สั่งเมื่อเหลือ',
+  state:         'สถานะ',
+  ts:            'เวลา',
+  delta:         'เปลี่ยนแปลง',
+  reason:        'เหตุผล',
+  user:          'ผู้ใช้',
+  net:           'ยอดสุทธิ',
+  amount:        'จำนวนเงิน',
+  vendor:        'ผู้ขาย',
+  role:          'ตำแหน่ง',
+  wage:          'ค่าแรง',
+  phone:         'เบอร์โทร',
+  startDate:     'วันที่เริ่ม',
+  email:         'อีเมล',
+  address:       'ที่อยู่',
+  revenue:       'รายได้',
+  orders:        'ออเดอร์',
+  avgTicket:     'บิลเฉลี่ย',
+  customers:     'ลูกค้า',
+  foodCost:      'ต้นทุนอาหาร',
+  laborCost:     'ค่าแรง',
+  margin:        'กำไร %',
+  cashIn:        'เงินเข้า',
+  cashOut:       'เงินออก',
+  target:        'เป้าหมาย',
+  recorder:      'บันทึกโดย',
+  month:         'เดือน',
+  expenses:      'ค่าใช้จ่าย',
+  netProfit:     'กำไรสุทธิ',
+};
+
+function thLabel_(key)   { return LABEL_TH[key]       || key; }
+function thSheet_(name)  { return SHEET_NAMES_TH[name] || name; }
+function enKey_(label) {
+  for (const k in LABEL_TH) if (LABEL_TH[k] === label) return k;
+  return label;
+}
+
 /* ---------- Entry point ---------- */
 function doPost(e) {
   return json(handle(e));
@@ -89,24 +189,37 @@ function ss_() { return SpreadsheetApp.openById(getSheetId_()); }
 
 function setupSheets() {
   const ss = ss_();
+  // Migrate old English-named tabs to new Thai names if exist
   Object.keys(TABS).forEach(name => {
-    let sh = ss.getSheetByName(name);
-    if (!sh) sh = ss.insertSheet(name);
-    const headers = TABS[name];
+    const oldEn = ss.getSheetByName(name);
+    const thName = thSheet_(name);
+    if (oldEn && name !== thName && !ss.getSheetByName(thName)) {
+      oldEn.setName(thName);
+    }
+  });
+
+  Object.keys(TABS).forEach(name => {
+    const thName = thSheet_(name);
+    let sh = ss.getSheetByName(thName);
+    if (!sh) sh = ss.insertSheet(thName);
+    const headers = TABS[name].map(thLabel_);
     sh.getRange(1, 1, 1, headers.length).setValues([headers]);
     sh.setFrozenRows(1);
-    sh.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#fafaf9');
+    sh.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#fafaf9').setHorizontalAlignment('center');
+    sh.autoResizeColumns(1, headers.length);
   });
   // Remove default Sheet1 if untouched
   const def = ss.getSheetByName('Sheet1');
   if (def && def.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(def);
-  return { ok: true, tabs: Object.keys(TABS) };
+  return { ok: true, tabs: Object.keys(TABS).map(thSheet_) };
 }
 
 /* ---------- Generic row helpers ---------- */
 function sh_(name) {
-  const sh = ss_().getSheetByName(name);
-  if (!sh) throw new Error('Missing sheet ' + name + ' — run setupSheets()');
+  const thName = thSheet_(name);
+  let sh = ss_().getSheetByName(thName);
+  if (!sh) sh = ss_().getSheetByName(name); // fallback to English (backward compat)
+  if (!sh) throw new Error('Missing sheet ' + thName + ' — run setupSheets()');
   return sh;
 }
 function rowFor_(name, obj) {
@@ -124,13 +237,17 @@ function appendRow_(name, obj) {
 }
 function saveRow_(name, obj) {
   appendRow_(name, obj);
-  return { ok: true, sheet: name };
+  return { ok: true, sheet: thSheet_(name) };
 }
 function findRow_(name, keyCol, key) {
   const sh = sh_(name);
   const data = sh.getDataRange().getValues();
+  if (data.length === 0) return -1;
   const headers = data[0];
-  const idx = headers.indexOf(keyCol);
+  // Try Thai label first, then fall back to English key
+  const thKey = thLabel_(keyCol);
+  let idx = headers.indexOf(thKey);
+  if (idx < 0) idx = headers.indexOf(keyCol);
   if (idx < 0) return -1;
   for (let r = 1; r < data.length; r++) {
     if (String(data[r][idx]) === String(key)) return r + 1; // 1-based
@@ -150,6 +267,29 @@ function updateRow_(name, keyCol, key, patch) {
 }
 function nowISO() { return new Date().toISOString(); }
 function json(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
+
+// หา index คอลัมน์ จาก en key (รองรับทั้ง Thai label และ English key ในชีต)
+function colIdx_(headers, enKey) {
+  const th = thLabel_(enKey);
+  let i = headers.indexOf(th);
+  if (i < 0) i = headers.indexOf(enKey);
+  return i;
+}
+// อ่านชีตทั้งตาราง คืน rows ที่ key เป็น en (เพื่อให้ frontend ใช้ได้)
+function readSheet_(name) {
+  const sh = sh_(name);
+  const data = sh.getDataRange().getValues();
+  if (data.length === 0) return { headers: TABS[name], thHeaders: TABS[name].map(thLabel_), rows: [] };
+  const thHeaders = data[0];
+  const enHeaders = thHeaders.map(h => enKey_(h));
+  const rows = [];
+  for (let r = 1; r < data.length; r++) {
+    const obj = {};
+    enHeaders.forEach((h, i) => obj[h] = data[r][i]);
+    rows.push(obj);
+  }
+  return { headers: enHeaders, thHeaders, rows };
+}
 
 /* ---------- Orders ---------- */
 function saveOrder(p) {
@@ -208,18 +348,14 @@ function updateOrder(p) {
 function listOrders(p) {
   const store = p && p.store;
   const since = Number(p && p.since) || 0;
-  const sh = sh_('Orders');
-  const data = sh.getDataRange().getValues();
-  const headers = data[0];
-  const rows = [];
-  for (let r = 1; r < data.length; r++) {
-    const obj = {};
-    headers.forEach((h, i) => obj[h] = data[r][i]);
+  const { rows } = readSheet_('Orders');
+  const out = [];
+  for (const obj of rows) {
     if (store && obj.store !== store) continue;
     if (since && Number(obj.updatedAt) < since) continue;
-    rows.push(obj);
+    out.push(obj);
   }
-  return { ok: true, records: rows };
+  return { ok: true, records: out };
 }
 
 /* ---------- Inventory ---------- */
@@ -228,9 +364,12 @@ function saveInventory(p) {
   if (!store || !updates) return { ok: false, error: 'missing' };
   const sh = sh_('Inventory');
   const data = sh.getDataRange().getValues();
+  if (data.length === 0) return { ok: false, error: 'no-headers' };
   const headers = data[0];
-  const idxName = headers.indexOf('name'), idxStore = headers.indexOf('store'),
-        idxState = headers.indexOf('state'), idxUpd = headers.indexOf('updatedAt');
+  const idxName  = colIdx_(headers, 'name');
+  const idxStore = colIdx_(headers, 'store');
+  const idxState = colIdx_(headers, 'state');
+  const idxUpd   = colIdx_(headers, 'updatedAt');
   const map = {};
   for (let r = 1; r < data.length; r++) {
     if (data[r][idxStore] === store) map[data[r][idxName]] = r + 1;
@@ -251,13 +390,9 @@ function saveInventory(p) {
 
 function inventoryAlerts(p) {
   const store = p && p.store;
-  const sh = sh_('Inventory');
-  const data = sh.getDataRange().getValues();
-  const headers = data[0];
+  const { rows } = readSheet_('Inventory');
   const alerts = [];
-  for (let r = 1; r < data.length; r++) {
-    const obj = {};
-    headers.forEach((h, i) => obj[h] = data[r][i]);
+  for (const obj of rows) {
     if (store && obj.store !== store) continue;
     if (obj.state === 'low' || obj.state === 'out') alerts.push(obj);
   }
@@ -268,20 +403,25 @@ function inventoryAlerts(p) {
 function saveDaily(p) {
   const s = p.summary || {};
   s.dateISO = s.dateISO || todayISO_();
+  const targetStore = p.store || s.store;
   // upsert by date+store
   const sh = sh_('Daily');
   const data = sh.getDataRange().getValues();
-  const headers = data[0];
-  const iDate = headers.indexOf('dateISO'), iStore = headers.indexOf('store');
-  for (let r = 1; r < data.length; r++) {
-    if (data[r][iDate] === s.dateISO && data[r][iStore] === (p.store || s.store)) {
-      const range = sh.getRange(r + 1, 1, 1, headers.length);
-      const merged = headers.map((h, i) => h in s ? s[h] : data[r][i]);
-      range.setValues([merged]);
-      return { ok: true, updated: true };
+  if (data.length > 0) {
+    const headers = data[0];
+    const iDate  = colIdx_(headers, 'dateISO');
+    const iStore = colIdx_(headers, 'store');
+    for (let r = 1; r < data.length; r++) {
+      if (data[r][iDate] === s.dateISO && data[r][iStore] === targetStore) {
+        // Build merged row using TABS[name] (en keys) mapped to columns by index
+        const enKeys = TABS.Daily;
+        const merged = enKeys.map((k, i) => k in s ? s[k] : data[r][i]);
+        sh.getRange(r + 1, 1, 1, enKeys.length).setValues([merged]);
+        return { ok: true, updated: true };
+      }
     }
   }
-  appendRow_('Daily', { ...s, store: p.store || s.store });
+  appendRow_('Daily', { ...s, store: targetStore });
   return { ok: true, inserted: true };
 }
 
@@ -291,14 +431,12 @@ function todayISO_() { return Utilities.formatDate(new Date(), 'Asia/Bangkok', '
 function summary(p) {
   const store = p && p.store;
   const since = p && p.since;
-  const sales = sh_('Sales').getDataRange().getValues();
-  const headers = sales[0];
-  const iDate = headers.indexOf('dateISO'), iStore = headers.indexOf('store'), iTotal = headers.indexOf('total');
+  const { rows } = readSheet_('Sales');
   let revenue = 0, orders = 0;
-  for (let r = 1; r < sales.length; r++) {
-    if (store && sales[r][iStore] !== store) continue;
-    if (since && sales[r][iDate] < since) continue;
-    revenue += Number(sales[r][iTotal]) || 0;
+  for (const r of rows) {
+    if (store && r.store !== store) continue;
+    if (since && r.dateISO < since) continue;
+    revenue += Number(r.total) || 0;
     orders++;
   }
   return { ok: true, revenue, orders, avgTicket: orders ? Math.round(revenue / orders) : 0 };
@@ -309,31 +447,26 @@ function salesByDay(p) {
   const days = Number(p && p.days || 14);
   const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
   const cutoffISO = Utilities.formatDate(cutoff, 'Asia/Bangkok', 'yyyy-MM-dd');
-  const sales = sh_('Sales').getDataRange().getValues();
-  const headers = sales[0];
-  const iDate = headers.indexOf('dateISO'), iStore = headers.indexOf('store'), iTotal = headers.indexOf('total');
+  const { rows } = readSheet_('Sales');
   const map = {};
-  for (let r = 1; r < sales.length; r++) {
-    if (store && sales[r][iStore] !== store) continue;
-    if (sales[r][iDate] < cutoffISO) continue;
-    map[sales[r][iDate]] = (map[sales[r][iDate]] || 0) + (Number(sales[r][iTotal]) || 0);
+  for (const r of rows) {
+    if (store && r.store !== store) continue;
+    if (r.dateISO < cutoffISO) continue;
+    map[r.dateISO] = (map[r.dateISO] || 0) + (Number(r.total) || 0);
   }
   return { ok: true, series: Object.keys(map).sort().map(d => ({ date: d, total: map[d] })) };
 }
 
 function topItems(p) {
   const store = p && p.store;
-  const lines = sh_('OrderLines').getDataRange().getValues();
-  const headers = lines[0];
-  const iStore = headers.indexOf('store'), iTh = headers.indexOf('th'),
-        iQty = headers.indexOf('qty'), iTotal = headers.indexOf('total');
+  const { rows } = readSheet_('OrderLines');
   const map = {};
-  for (let r = 1; r < lines.length; r++) {
-    if (store && lines[r][iStore] !== store) continue;
-    const k = lines[r][iTh];
+  for (const r of rows) {
+    if (store && r.store !== store) continue;
+    const k = r.th;
     if (!map[k]) map[k] = { name: k, qty: 0, revenue: 0 };
-    map[k].qty += Number(lines[r][iQty]) || 0;
-    map[k].revenue += Number(lines[r][iTotal]) || 0;
+    map[k].qty     += Number(r.qty)   || 0;
+    map[k].revenue += Number(r.total) || 0;
   }
   const arr = Object.values(map).sort((a, b) => b.qty - a.qty).slice(0, 20);
   return { ok: true, items: arr };
