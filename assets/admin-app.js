@@ -159,26 +159,56 @@
   }
 
   function bindShell() {
-    $$('[data-store]').forEach(b => b.onclick = () => switchStore(b.dataset.store));
-    $$('[data-view]').forEach(b => b.onclick = () => switchView(b.dataset.view));
-    $('#theme_toggle').onclick = () => {
-      state.theme = state.theme === 'dark' ? 'light' : 'dark';
-      localStorage.setItem('yy.theme', state.theme);
-      applyTheme();
-    };
-    $('#btn_sidebar').onclick = () => {
-      const side = $('aside.side');
-      const bd = $('.mobile-backdrop');
-      side.classList.toggle('mobile-open');
-      bd.classList.toggle('show');
-    };
-    $('#mb_bd').onclick = () => {
-      $('aside.side').classList.remove('mobile-open');
-      $('.mobile-backdrop').classList.remove('show');
-    };
-    $('#topbar_search').oninput = (e) => { state.search = e.target.value; renderView(); };
-    $('#btn_alerts').onclick = () => switchView('inventory');
-    $('#user_chip').onclick = () => switchView('settings');
+    // Use event delegation - attach once to document, survives all re-renders
+    if (bindShell._bound) return;
+    bindShell._bound = true;
+
+    document.addEventListener('click', (e) => {
+      const storeBtn = e.target.closest('[data-store]');
+      if (storeBtn) { switchStore(storeBtn.dataset.store); return; }
+
+      const viewBtn = e.target.closest('[data-view]');
+      if (viewBtn) { switchView(viewBtn.dataset.view); return; }
+
+      const themeBtn = e.target.closest('#theme_toggle');
+      if (themeBtn) {
+        state.theme = state.theme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('yy.theme', state.theme);
+        applyTheme();
+        return;
+      }
+
+      const sidebarBtn = e.target.closest('#btn_sidebar');
+      if (sidebarBtn) {
+        const side = $('aside.side');
+        const bd = $('.mobile-backdrop');
+        if (side) side.classList.toggle('mobile-open');
+        if (bd) bd.classList.toggle('show');
+        return;
+      }
+
+      const mbBd = e.target.closest('#mb_bd');
+      if (mbBd) {
+        const side = $('aside.side');
+        const bd = $('.mobile-backdrop');
+        if (side) side.classList.remove('mobile-open');
+        if (bd) bd.classList.remove('show');
+        return;
+      }
+
+      const alertsBtn = e.target.closest('#btn_alerts');
+      if (alertsBtn) { switchView('inventory'); return; }
+
+      const userChip = e.target.closest('#user_chip');
+      if (userChip) { switchView('settings'); return; }
+    });
+
+    document.addEventListener('input', (e) => {
+      if (e.target.id === 'topbar_search') {
+        state.search = e.target.value;
+        renderView();
+      }
+    });
   }
 
   function switchStore(id) {
