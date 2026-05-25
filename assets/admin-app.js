@@ -187,6 +187,7 @@
     localStorage.setItem('yy.activeStore', id);
     applyAccent();
     renderShell();
+    bindShell();
     renderView();
   }
   function switchView(v) {
@@ -194,6 +195,7 @@
     state.view = v;
     localStorage.setItem('yy.adminView', v);
     renderShell();
+    bindShell();
     renderView();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     $('aside.side').classList.remove('mobile-open');
