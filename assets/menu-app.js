@@ -27,6 +27,7 @@
     search:     '',
     cart:       readCart(),      // [{ itemId, th, en, qty, unitPrice, total, opts:{} }]
     drawerOpen: false,
+    orderType:  localStorage.getItem(`yy.${storeId}.orderType`) || 'dinein', // 'dinein' | 'takeaway'
     activeOrderId: localStorage.getItem(`yy.${storeId}.activeOrder`) || '',
     pollTm: null,
   };
@@ -196,6 +197,11 @@
     document.getElementById('cart_total').textContent = baht(cartTotal());
     bar.classList.toggle('show', n > 0);
 
+    // Reflect orderType in toggle buttons
+    document.querySelectorAll('#ot_row [data-ot]').forEach(b => {
+      b.classList.toggle('on', b.dataset.ot === state.orderType);
+    });
+
     // Drawer body
     const body = document.getElementById('drawer_body');
     if (!state.cart.length) {
@@ -247,12 +253,7 @@
   async function placeOrder() {
     if (!state.cart.length) return;
     const subtotal = cartTotal();
-
-    // Ask for table number (light dialog)
-    let table = prompt('โต๊ะที่ ___ (ถ้าซื้อกลับใส่ 0)', localStorage.getItem(`yy.${storeId}.lastTable`) || '');
-    if (table === null) return;
-    table = String(table || '').trim();
-    if (table) localStorage.setItem(`yy.${storeId}.lastTable`, table);
+    const orderType = state.orderType; // 'dinein' | 'takeaway'
 
     const orderId = await api.nextOrderNo(storeId);
     const record = {
@@ -260,8 +261,8 @@
       createdAt: Date.now(),
       updatedAt: Date.now(),
       status: 'new',
-      type: table === '0' ? 'takeaway' : 'dinein',
-      table: table === '0' ? '' : ('โต๊ะ ' + table),
+      type:    orderType,
+      table:   '',
       customer: '',
       subtotal,
       discount: 0,
@@ -421,6 +422,15 @@
     });
 
     document.getElementById('place_btn').addEventListener('click', placeOrder);
+
+    // Order-type toggle (ทานที่นี่ / กลับบ้าน)
+    document.getElementById('ot_row').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-ot]');
+      if (!b) return;
+      state.orderType = b.dataset.ot;
+      localStorage.setItem(`yy.${storeId}.orderType`, state.orderType);
+      renderCart();
+    });
 
     // Tracker
     document.getElementById('tk_close').addEventListener('click', closeTracker);

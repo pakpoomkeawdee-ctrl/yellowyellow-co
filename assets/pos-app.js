@@ -32,7 +32,7 @@
     discount:  { type: 'fixed', value: 0, label: '' },
     cashier:   localStorage.getItem('yy.cashier') || 'พนักงาน',
     search:    '',
-    staffTab:  'orders',    // orders | tables | queue | dashboard | history
+    staffTab:  'orders',    // orders | queue | dashboard | history
     filterStatus: 'all',
     modal:     null,
     editIndex: -1,
@@ -334,15 +334,13 @@
         </div>
 
         <div class="cart-type">
-          ${ORDER_TYPES.map(t => `
-            <button class="type-btn ${state.orderType === t.id ? 'is-active' : ''}" data-type="${t.id}">${t.label}</button>
+          ${ORDER_TYPES.filter(t => t.id === 'dinein' || t.id === 'takeaway').map(t => `
+            <button class="type-btn ${state.orderType === t.id ? 'is-active' : ''}" data-type="${t.id}">${t.id === 'dinein' ? '🍽️ ทานที่นี่' : '🥡 กลับบ้าน'}</button>
           `).join('')}
         </div>
 
         <div class="cart-info">
-          ${state.orderType === 'dinein'
-            ? `<input class="cart-input" id="cart-table" placeholder="หมายเลขโต๊ะ" value="${escapeAttr(state.tableNo)}">`
-            : `<input class="cart-input" id="cart-customer" placeholder="ชื่อลูกค้า / เบอร์โทร" value="${escapeAttr(state.customer)}">`}
+          <input class="cart-input" id="cart-customer" placeholder="ชื่อลูกค้า (ไม่บังคับ)" value="${escapeAttr(state.customer)}">
           <input class="cart-input" id="cart-note" placeholder="หมายเหตุ" value="${escapeAttr(state.note)}">
         </div>
 
@@ -413,7 +411,6 @@
       }
       render();
     });
-    const tableInp = $('#cart-table');    if (tableInp)    tableInp.oninput    = (e) => state.tableNo  = e.target.value;
     const custInp  = $('#cart-customer'); if (custInp)     custInp.oninput     = (e) => state.customer = e.target.value;
     const noteInp  = $('#cart-note');     if (noteInp)     noteInp.oninput     = (e) => state.note     = e.target.value;
     const clear    = $('#cart-clear');    if (clear)       clear.onclick       = () => { state.cart = []; render(); };
@@ -437,7 +434,6 @@
     };
     const tabs = [
       { id: 'orders',    label: 'ออเดอร์',  icon: '🧾' },
-      { id: 'tables',    label: 'โต๊ะ',     icon: '🪑' },
       { id: 'queue',     label: 'คิว',       icon: '🔔' },
       { id: 'dashboard', label: 'ยอดวันนี้', icon: '📊' },
       { id: 'history',   label: 'ประวัติ',  icon: '📜' },
@@ -465,8 +461,9 @@
   }
 
   function renderStaffTab(s, allRecords) {
+    // Migrate away from removed tabs (table tracking is gone)
+    if (state.staffTab === 'tables') state.staffTab = 'orders';
     if (state.staffTab === 'orders')    return renderOrdersTab(allRecords);
-    if (state.staffTab === 'tables')    return renderTablesTab(allRecords);
     if (state.staffTab === 'queue')     return renderQueueTab(allRecords);
     if (state.staffTab === 'dashboard') return renderDashTab(allRecords, s);
     if (state.staffTab === 'history')   return renderHistoryTab(allRecords);
@@ -930,10 +927,6 @@
   /* --- Payment --- */
   function openPaymentModal() {
     if (state.cart.length === 0) return;
-    if (state.orderType === 'dinein' && !state.tableNo) {
-      toast('โปรดระบุหมายเลขโต๊ะ', 'er');
-      return;
-    }
     state.modal = { kind: 'payment', method: 'cash', received: '' };
     renderModal();
   }

@@ -442,6 +442,35 @@
   }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
   @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ── Order-type toggle ───────────────────── */
+  .ot-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .ot-btn {
+    padding: 11px 10px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-2);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    cursor: pointer;
+    transition: all .15s;
+    min-height: 46px;
+  }
+  .ot-btn:active { transform: scale(.98); }
+  .ot-btn.on {
+    background: var(--store);
+    color: #fff;
+    border-color: var(--store);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--store) 30%, transparent);
+  }
+  .ot-emoji { font-size: 18px; }
 </style>
 </head>
 <body>
@@ -491,6 +520,10 @@
   </div>
   <div class="drawer-body" id="drawer_body"></div>
   <div class="drawer-foot">
+    <div class="ot-row" id="ot_row">
+      <button class="ot-btn" data-ot="dinein"><span class="ot-emoji">🍽️</span> ทานที่นี่</button>
+      <button class="ot-btn" data-ot="takeaway"><span class="ot-emoji">🥡</span> กลับบ้าน</button>
+    </div>
     <div class="totals">
       <span>ยอดรวม</span>
       <span class="grand" id="grand">฿0</span>
