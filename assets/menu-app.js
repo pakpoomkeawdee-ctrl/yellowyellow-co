@@ -130,6 +130,37 @@
   function addToCart(itemId) {
     const it = findItem(itemId);
     if (!it) return;
+
+    // If item has options → open customizer; else add directly
+    const CUST = window.YY_CUSTOMIZER;
+    if (CUST && CUST.hasOptions(it)) {
+      CUST.open(it, {
+        storeColor: store.accent,
+        mode: 'customer',
+        emoji: pickEmoji(it),
+        onConfirm: (r) => {
+          state.cart.push({
+            itemId: it.id,
+            th: it.th, en: it.en || '',
+            qty: r.qty,
+            unitPrice: r.unitPrice,
+            total: r.totalPrice,
+            note: r.note,
+            choices: r.choices,
+            mods: r.mods,
+            opts: r.legacy,  // legacy keys for sheet sync
+            summary: r.summary,
+            hasOpts: true,
+          });
+          writeCart();
+          renderCart();
+          toast('✓ เพิ่ม ' + it.th + ' แล้ว');
+        },
+      });
+      return;
+    }
+
+    // No options — quick add (merge with existing same-item line)
     const existing = state.cart.find(r => r.itemId === itemId && !r.hasOpts);
     if (existing) {
       existing.qty += 1;
@@ -170,19 +201,29 @@
     if (!state.cart.length) {
       body.innerHTML = `<div class="empty"><div class="empty-emoji">🛒</div>ตะกร้าว่างเปล่า</div>`;
     } else {
-      body.innerHTML = state.cart.map((r, i) => `
-        <div class="cart-row">
-          <div class="cart-info">
-            <div class="cart-name">${r.th}</div>
-            <div class="cart-price">${baht(r.total)} <span style="color:var(--muted);font-weight:500">(${baht(r.unitPrice)} × ${r.qty})</span></div>
+      body.innerHTML = state.cart.map((r, i) => {
+        const summary = Array.isArray(r.summary) && r.summary.length
+          ? `<div style="font-size:11.5px;color:var(--muted);margin:3px 0 4px;line-height:1.4">${r.summary.map(s => `• ${s}`).join('<br>')}</div>`
+          : '';
+        const note = r.note
+          ? `<div style="font-size:11px;color:var(--muted);font-style:italic;margin-bottom:4px">📝 ${r.note}</div>`
+          : '';
+        return `
+          <div class="cart-row">
+            <div class="cart-info">
+              <div class="cart-name">${r.th}</div>
+              ${summary}
+              ${note}
+              <div class="cart-price">${baht(r.total)} <span style="color:var(--muted);font-weight:500">(${baht(r.unitPrice)} × ${r.qty})</span></div>
+            </div>
+            <div class="qty">
+              <button data-q="-" data-i="${i}">−</button>
+              <span>${r.qty}</span>
+              <button data-q="+" data-i="${i}">+</button>
+            </div>
           </div>
-          <div class="qty">
-            <button data-q="-" data-i="${i}">−</button>
-            <span>${r.qty}</span>
-            <button data-q="+" data-i="${i}">+</button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
     document.getElementById('grand').textContent = baht(cartTotal());
     document.getElementById('place_btn').disabled = !state.cart.length;
@@ -234,10 +275,19 @@
       synced: false,
       dateISO: fmt.todayISO(),
       lines: state.cart.map((r, i) => ({
-        lineId: `${orderId}-${i+1}`,
-        itemId: r.itemId, th: r.th, en: r.en,
-        qty: r.qty, unitPrice: r.unitPrice, total: r.total,
-        mods: r.opts ? Object.values(r.opts) : [],
+        lineId:  `${orderId}-${i+1}`,
+        itemId:  r.itemId, th: r.th, en: r.en,
+        qty:     r.qty, unitPrice: r.unitPrice, total: r.total,
+        // Legacy keys (compatible with sheet schema + pos-app)
+        temp:    r.opts?.temp    || '',
+        size:    r.opts?.size    || '',
+        type:    r.opts?.type    || '',
+        protein: r.opts?.protein || '',
+        sauce:   r.opts?.sauce   || '',
+        sweet:   r.opts?.sweet   || '',
+        spice:   r.opts?.spice   || '',
+        mods:    (r.mods || []).map(m => m.label || m),
+        note:    r.note || '',
       })),
     };
 

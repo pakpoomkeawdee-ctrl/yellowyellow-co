@@ -869,44 +869,232 @@
 
   function openItemEditor(item) {
     const MS = window.YY_MENU_STORE;
+    const CUST = window.YY_CUSTOMIZER;
     const cats = MS.getStoreMenus(state.storeId);
     const isNew = !item;
-    const data = item || { id: 'item-' + Date.now(), cat: cats[0]?.cat || '', th: '', en: '', basePrice: 0, cost: 0, active: true };
+    const data = item ? JSON.parse(JSON.stringify(item)) : {
+      id: 'item-' + Date.now(), cat: cats[0]?.cat || '',
+      th: '', en: '', basePrice: 0, cost: 0, active: true, optionGroups: [],
+    };
+    // Migrate legacy → optionGroups (for editing)
+    if (!Array.isArray(data.optionGroups)) data.optionGroups = [];
+    if (CUST && !data.optionGroups.length) {
+      const normalised = CUST.normalizeGroups(data);
+      data.optionGroups = normalised.map(g => ({
+        id: g.id, name: g.name, en: g.en,
+        required: g.required, multi: g.multi,
+        basePriceMode: g.basePriceMode,
+        options: g.options.map(o => ({
+          id: o.id, label: o.label,
+          extraPrice:    o.extraPrice,
+          absolutePrice: o.absolutePrice,
+          enabled:       o.enabled !== false,
+        })),
+      }));
+    }
 
     showModal(`
       <h3 class="text-lg font-bold mb-3">${isNew ? '➕ เพิ่มเมนูใหม่' : '✏️ แก้ไขเมนู'}</h3>
-      <div class="space-y-3">
-        <label class="block">
-          <span class="text-xs muted">ชื่อเมนู (ไทย)</span>
-          <input id="ie_th" class="input mt-1 w-full" value="${escAttr(data.th)}" placeholder="เช่น นมตุ๋นน้ำผึ้ง" />
-        </label>
-        <label class="block">
-          <span class="text-xs muted">ชื่อ (อังกฤษ)</span>
-          <input id="ie_en" class="input mt-1 w-full" value="${escAttr(data.en || '')}" placeholder="Honey Milk" />
-        </label>
-        <label class="block">
-          <span class="text-xs muted">หมวด</span>
-          <select id="ie_cat" class="input mt-1 w-full">
-            ${cats.map(c => `<option value="${c.cat}" ${c.cat === data.cat ? 'selected' : ''}>${escHtml(c.label)}</option>`).join('')}
-          </select>
-        </label>
-        <div class="grid grid-cols-2 gap-3">
+
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-4" style="border-bottom:1px solid var(--border)">
+        <button class="ie-tab active" data-tab="basic" style="padding:8px 14px;border-bottom:2px solid var(--accent,var(--store));font-weight:600">📝 ข้อมูลพื้นฐาน</button>
+        <button class="ie-tab" data-tab="options" style="padding:8px 14px;border-bottom:2px solid transparent;color:var(--muted)">⚙️ ตัวเลือก (${data.optionGroups.length})</button>
+      </div>
+
+      <!-- Basic tab -->
+      <div id="ie_tab_basic">
+        <div class="space-y-3">
           <label class="block">
-            <span class="text-xs muted">ราคาขาย (บาท)</span>
-            <input id="ie_price" type="number" min="0" class="input mt-1 w-full" value="${data.basePrice || 0}" />
+            <span class="text-xs muted">ชื่อเมนู (ไทย) *</span>
+            <input id="ie_th" class="input mt-1 w-full" value="${escAttr(data.th)}" placeholder="เช่น นมตุ๋นน้ำผึ้ง" />
           </label>
           <label class="block">
-            <span class="text-xs muted">ต้นทุน (บาท)</span>
-            <input id="ie_cost" type="number" min="0" class="input mt-1 w-full" value="${data.cost || 0}" />
+            <span class="text-xs muted">ชื่อ (อังกฤษ)</span>
+            <input id="ie_en" class="input mt-1 w-full" value="${escAttr(data.en || '')}" placeholder="Honey Milk" />
+          </label>
+          <label class="block">
+            <span class="text-xs muted">หมวด *</span>
+            <select id="ie_cat" class="input mt-1 w-full">
+              ${cats.map(c => `<option value="${escAttr(c.cat)}" ${c.cat === data.cat ? 'selected' : ''}>${escHtml(c.label)}</option>`).join('')}
+            </select>
+          </label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="block">
+              <span class="text-xs muted">ราคาขาย (บาท)</span>
+              <input id="ie_price" type="number" min="0" step="1" class="input mt-1 w-full" value="${data.basePrice || 0}" />
+            </label>
+            <label class="block">
+              <span class="text-xs muted">ต้นทุน (บาท)</span>
+              <input id="ie_cost" type="number" min="0" step="1" class="input mt-1 w-full" value="${data.cost || 0}" />
+            </label>
+          </div>
+          <label class="flex items-center gap-2">
+            <input id="ie_active" type="checkbox" ${data.active !== false ? 'checked' : ''} style="width:18px;height:18px"/>
+            <span class="text-sm">เปิดใช้งานเมนูนี้</span>
           </label>
         </div>
       </div>
-      <div class="flex justify-end gap-2 mt-5">
+
+      <!-- Options tab -->
+      <div id="ie_tab_options" style="display:none">
+        <div class="text-xs muted mb-3">
+          💡 ตัวเลือก = ขนาด/ความหวาน/ท็อปปิ้ง ฯลฯ ที่ลูกค้าเลือกได้ตอนสั่ง
+        </div>
+        <div id="ie_groups" class="space-y-3"></div>
+        <button class="btn btn-soft w-full mt-3" id="ie_add_group">+ เพิ่มกลุ่มตัวเลือก</button>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-5 pt-4" style="border-top:1px solid var(--border)">
         <button class="btn btn-soft" id="ie_cancel">ยกเลิก</button>
         <button class="btn btn-primary" id="ie_save">💾 บันทึก</button>
       </div>
-    `);
+    `, { maxWidth: '640px' });
 
+    // Tab switch
+    const bd = document.getElementById('yy_modal');
+    bd.querySelectorAll('.ie-tab').forEach(t => {
+      t.onclick = () => {
+        bd.querySelectorAll('.ie-tab').forEach(x => {
+          x.classList.remove('active');
+          x.style.borderBottomColor = 'transparent';
+          x.style.color = 'var(--muted)';
+        });
+        t.classList.add('active');
+        t.style.borderBottomColor = 'var(--accent, var(--store))';
+        t.style.color = 'var(--text)';
+        bd.querySelector('#ie_tab_basic').style.display   = (t.dataset.tab === 'basic')   ? '' : 'none';
+        bd.querySelector('#ie_tab_options').style.display = (t.dataset.tab === 'options') ? '' : 'none';
+      };
+    });
+
+    // Render option groups
+    function renderGroups() {
+      const root = bd.querySelector('#ie_groups');
+      if (!data.optionGroups.length) {
+        root.innerHTML = `<div class="text-center muted py-6" style="background:var(--surface-2);border-radius:12px;font-size:13px">ยังไม่มีกลุ่มตัวเลือก<br/><span class="text-xs">กด "+ เพิ่มกลุ่มตัวเลือก" ด้านล่าง</span></div>`;
+        return;
+      }
+      root.innerHTML = data.optionGroups.map((g, gi) => `
+        <div class="surface-2 rounded-xl p-3" data-gi="${gi}" style="border:1px solid var(--border)">
+          <div class="flex items-center gap-2 mb-2">
+            <input class="input flex-1 text-sm" data-grp="name" value="${escAttr(g.name)}" placeholder="ชื่อกลุ่ม เช่น ขนาด"/>
+            <button class="btn btn-icon" data-grp-up    title="เลื่อนขึ้น" ${gi === 0 ? 'disabled' : ''}>↑</button>
+            <button class="btn btn-icon" data-grp-down  title="เลื่อนลง"  ${gi === data.optionGroups.length - 1 ? 'disabled' : ''}>↓</button>
+            <button class="btn btn-icon danger" data-grp-del title="ลบกลุ่ม">🗑</button>
+          </div>
+          <div class="flex items-center gap-3 mb-2 text-xs flex-wrap">
+            <label class="flex items-center gap-1">
+              <input type="checkbox" data-grp="required" ${g.required ? 'checked' : ''}/> จำเป็น
+            </label>
+            <label class="flex items-center gap-1">
+              <input type="checkbox" data-grp="multi" ${g.multi ? 'checked' : ''}/> เลือกได้หลายอย่าง
+            </label>
+            <label class="flex items-center gap-1 flex-1 min-w-0">
+              <span class="muted shrink-0">โหมดราคา:</span>
+              <select data-grp="basePriceMode" class="input text-xs" style="padding:2px 6px;flex:1;min-width:0">
+                <option value="add"     ${g.basePriceMode === 'add' ? 'selected' : ''}>+ บวกเพิ่ม</option>
+                <option value="replace" ${g.basePriceMode === 'replace' ? 'selected' : ''}>แทนราคาฐาน</option>
+              </select>
+            </label>
+          </div>
+          <div data-opts class="space-y-1.5">
+            ${(g.options || []).map((o, oi) => `
+              <div class="flex items-center gap-2" data-oi="${oi}">
+                <input class="input flex-1 text-sm" data-opt="label" value="${escAttr(o.label)}" placeholder="ตัวเลือก เช่น ขนาดใหญ่"/>
+                <input class="input text-sm" data-opt="${g.basePriceMode === 'replace' ? 'absolutePrice' : 'extraPrice'}" type="number" min="0" step="1" value="${(g.basePriceMode === 'replace' ? o.absolutePrice : o.extraPrice) ?? 0}" placeholder="ราคา" style="width:90px"/>
+                <button class="btn btn-icon danger" data-opt-del title="ลบ">×</button>
+              </div>
+            `).join('')}
+          </div>
+          <button class="btn btn-soft text-xs mt-2" data-opt-add>+ เพิ่มตัวเลือก</button>
+        </div>
+      `).join('');
+
+      // Wire events for each group
+      root.querySelectorAll('[data-gi]').forEach(grpEl => {
+        const gi = +grpEl.dataset.gi;
+        const g  = data.optionGroups[gi];
+
+        // Group fields
+        grpEl.querySelectorAll('[data-grp]').forEach(inp => {
+          inp.oninput = inp.onchange = () => {
+            const field = inp.dataset.grp;
+            if (inp.type === 'checkbox') g[field] = inp.checked;
+            else g[field] = inp.value;
+            // If basePriceMode flipped, re-render so labels match
+            if (field === 'basePriceMode') renderGroups();
+          };
+        });
+
+        // Group actions
+        grpEl.querySelector('[data-grp-del]').onclick = () => {
+          if (confirm(`ลบกลุ่ม "${g.name || 'ไม่มีชื่อ'}" ?`)) {
+            data.optionGroups.splice(gi, 1);
+            renderGroups();
+            updateOptionsTab();
+          }
+        };
+        grpEl.querySelector('[data-grp-up]').onclick = () => {
+          if (gi === 0) return;
+          [data.optionGroups[gi - 1], data.optionGroups[gi]] = [data.optionGroups[gi], data.optionGroups[gi - 1]];
+          renderGroups();
+        };
+        grpEl.querySelector('[data-grp-down]').onclick = () => {
+          if (gi === data.optionGroups.length - 1) return;
+          [data.optionGroups[gi + 1], data.optionGroups[gi]] = [data.optionGroups[gi], data.optionGroups[gi + 1]];
+          renderGroups();
+        };
+
+        // Option rows
+        grpEl.querySelectorAll('[data-oi]').forEach(optEl => {
+          const oi = +optEl.dataset.oi;
+          const o  = g.options[oi];
+          optEl.querySelectorAll('[data-opt]').forEach(inp => {
+            inp.oninput = () => {
+              const field = inp.dataset.opt;
+              if (field === 'extraPrice' || field === 'absolutePrice') o[field] = Number(inp.value) || 0;
+              else o[field] = inp.value;
+            };
+          });
+          optEl.querySelector('[data-opt-del]').onclick = () => {
+            g.options.splice(oi, 1);
+            renderGroups();
+          };
+        });
+
+        // Add option
+        grpEl.querySelector('[data-opt-add]').onclick = () => {
+          g.options = g.options || [];
+          g.options.push({
+            id: 'opt-' + Date.now() + '-' + g.options.length,
+            label: '', extraPrice: 0, absolutePrice: null, enabled: true,
+          });
+          renderGroups();
+        };
+      });
+    }
+
+    function updateOptionsTab() {
+      const tab = bd.querySelector('[data-tab="options"]');
+      if (tab) tab.innerHTML = `⚙️ ตัวเลือก (${data.optionGroups.length})`;
+    }
+
+    bd.querySelector('#ie_add_group').onclick = () => {
+      data.optionGroups.push({
+        id: 'grp-' + Date.now(),
+        name: '', en: '',
+        required: false, multi: false,
+        basePriceMode: 'add',
+        options: [{ id: 'opt-' + Date.now(), label: '', extraPrice: 0, absolutePrice: null, enabled: true }],
+      });
+      renderGroups();
+      updateOptionsTab();
+    };
+
+    renderGroups();
+
+    // Cancel / Save
     document.getElementById('ie_cancel').onclick = closeModal;
     document.getElementById('ie_save').onclick = () => {
       const out = {
@@ -917,10 +1105,23 @@
         basePrice: Number(document.getElementById('ie_price').value) || 0,
         cost:      Number(document.getElementById('ie_cost').value) || 0,
         store:     state.storeId,
-        active:    data.active !== false,
+        active:    document.getElementById('ie_active').checked,
       };
-      if (!out.th) { alert('ใส่ชื่อเมนูภาษาไทย'); return; }
+      // Clean option groups: drop empty groups/options
+      out.optionGroups = (data.optionGroups || []).map(g => ({
+        ...g,
+        name: (g.name || '').trim(),
+        options: (g.options || []).filter(o => (o.label || '').trim()).map(o => ({
+          ...o, label: o.label.trim(),
+          extraPrice:    Number(o.extraPrice) || 0,
+          absolutePrice: o.absolutePrice != null && o.absolutePrice !== '' ? Number(o.absolutePrice) : null,
+          enabled: o.enabled !== false,
+        })),
+      })).filter(g => g.name && g.options.length);
+
+      if (!out.th)  { alert('ใส่ชื่อเมนูภาษาไทย'); return; }
       if (!out.cat) { alert('เลือกหมวด'); return; }
+
       MS.upsertItem(state.storeId, out);
       closeModal();
       toast(isNew ? 'เพิ่มเมนูแล้ว' : 'บันทึกแล้ว', 'ok');
@@ -965,24 +1166,34 @@
   }
 
   // ── Simple modal helpers (reuse #yy_modal if exists, else create) ──
-  function showModal(html) {
+  function showModal(html, opts) {
+    opts = opts || {};
     let bd = document.getElementById('yy_modal');
     if (!bd) {
       bd = document.createElement('div');
       bd.id = 'yy_modal';
       bd.style.cssText = `
-        position:fixed;inset:0;background:rgba(15,15,15,.5);backdrop-filter:blur(6px);
-        z-index:9999;display:none;align-items:flex-start;justify-content:center;padding:6vh 14px;overflow-y:auto;
+        position:fixed;inset:0;background:rgba(15,15,15,.55);backdrop-filter:blur(6px);
+        -webkit-backdrop-filter:blur(6px);
+        z-index:9999;display:none;align-items:flex-start;justify-content:center;
+        padding:3vh 12px;overflow-y:auto;-webkit-overflow-scrolling:touch;
       `;
       bd.addEventListener('click', (e) => { if (e.target === bd) closeModal(); });
+      // Esc key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && bd.style.display === 'flex') closeModal();
+      });
       document.body.appendChild(bd);
     }
-    bd.innerHTML = `<div class="card" style="max-width:460px;width:100%;padding:22px;border-radius:16px;background:var(--surface);box-shadow:0 24px 60px rgba(0,0,0,.25);animation:popIn .22s cubic-bezier(.2,.8,.2,1)">${html}</div>`;
+    const maxW = opts.maxWidth || '500px';
+    bd.innerHTML = `<div class="card" style="max-width:${maxW};width:100%;padding:22px;border-radius:16px;background:var(--surface);box-shadow:0 24px 60px rgba(0,0,0,.25);animation:popIn .22s cubic-bezier(.2,.8,.2,1);max-height:94vh;overflow-y:auto;-webkit-overflow-scrolling:touch">${html}</div>`;
     bd.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
   }
   function closeModal() {
     const bd = document.getElementById('yy_modal');
     if (bd) bd.style.display = 'none';
+    document.body.style.overflow = '';
   }
 
   /* ============================================================
