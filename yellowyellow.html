@@ -249,10 +249,11 @@ tailwind.config = {
         <div class="nav-user" id="user_chip">
           <div class="nav-avatar" id="nav_avatar">yy</div>
           <div class="hidden lg:block leading-tight">
-            <div class="font-semibold text-[13px]">Admin</div>
+            <div class="font-semibold text-[13px]" id="nav_user_role">Admin</div>
             <div class="text-[11px] muted-2" id="nav_user_sub">workspace</div>
           </div>
         </div>
+        <button id="btn_logout" class="pill" title="ออกจากระบบ" style="cursor:pointer;border:1px solid var(--border);padding:6px 12px;">⏻ ออก</button>
       </div>
     </header>
 
@@ -277,7 +278,19 @@ tailwind.config = {
 
 <script src="assets/config.js"></script>
 <script src="assets/menus.js"></script>
+<script src="assets/menu-store.js"></script>
 <script src="assets/api.js"></script>
+<script src="assets/auth.js"></script>
+<script>
+  // ── Auth guard: admin or super only ──────────────────────────
+  (function () {
+    const auth = window.YY_AUTH;
+    const storeId = auth.getStoreFromURL();
+    if (!auth.isAuthed('admin', storeId) && !auth.isAuthed('super')) {
+      location.replace('./start.html');
+    }
+  })();
+</script>
 <script src="assets/admin-app.js"></script>
 </body>
 </html>

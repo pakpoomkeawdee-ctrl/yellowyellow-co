@@ -10,7 +10,10 @@
       "Read(//c/c/Users/Cherie/Desktop/Claude Code/**)",
       "PowerShell($files = 'assets\\\\config.js','assets\\\\menus.js','assets\\\\api.js','assets\\\\pos-app.js','assets\\\\admin-app.js'; foreach \\($f in $files\\) { Write-Output \"== $f ==\"; try { $exe = \\(Get-Command node -ErrorAction Stop\\).Source; & $exe --check $f 2>&1 } catch { 'node not available' } })",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git remote *)",
+      "Bash(git branch *)",
+      "Bash(git push *)"
     ]
   }
 }

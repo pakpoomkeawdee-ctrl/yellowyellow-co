@@ -99,5 +99,90 @@ code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85em
 
 /* ── Touch tweaks ─────────────────────────────────────────── */
 @media (pointer: coarse) {
-  button { min-height: 40px; }
+  button { min-height: 44px; }      /* WCAG AA touch target */
+  input, select, textarea { min-height: 44px; }
+  /* Fix iOS auto-zoom on focused inputs */
+  input, select, textarea { font-size: 16px !important; }
+}
+
+/* ── Universal mobile safety ──────────────────────────────── */
+html, body { max-width: 100vw; overflow-x: hidden; }
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Safe-area inset for notch / home indicator */
+@supports (padding: env(safe-area-inset-top)) {
+  body { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+/* Tables: prevent horizontal page overflow, allow scrolling within */
+.tbl, table { width: 100%; border-collapse: collapse; }
+.overflow-x-auto, .scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.overflow-x-auto > table { min-width: 540px; }
+
+/* Modal-bd: always usable on mobile */
+.modal-bd { padding: 14px; }
+.modal-bd > .card, .modal-bd > div {
+  max-height: 86dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Cards: prevent overflowing */
+.card { min-width: 0; }
+
+/* Sticky top elements: respect notch */
+.sticky-top, .top-bar {
+  padding-top: max(env(safe-area-inset-top), 8px);
+}
+
+/* Buttons with icons stay compact */
+.btn-icon {
+  padding: 6px 8px !important;
+  min-height: 36px !important;
+  min-width: 36px;
+}
+
+/* On small screens, kill desktop-only padding so things fit */
+@media (max-width: 640px) {
+  .card { border-radius: 12px; }
+  h1 { font-size: 22px !important; }
+  h2 { font-size: 18px !important; }
+  .text-2xl { font-size: 20px !important; }
+  .text-lg { font-size: 16px !important; }
+  /* Make .pill smaller */
+  .pill { padding: 4px 10px; font-size: 11.5px; }
+}
+
+/* Drawer/overlay needs to lock body scroll cleanly */
+body.no-scroll { overflow: hidden; touch-action: none; }
+
+/* iOS bounce fix for fixed bottom bars */
+@supports (-webkit-touch-callout: none) {
+  .fixed.bottom-0 { transform: translateZ(0); }
+}
+
+/* Focus visible (a11y) */
+:focus-visible {
+  outline: 2px solid var(--store);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+button:focus-visible, a:focus-visible { outline-offset: 4px; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* Print-friendly: hide nav/sidebar/overlay */
+@media print {
+  .no-print, header, nav, aside, .mobile-tabs, .modal-bd, .yy-toast, .yy-offline { display: none !important; }
+  .card { box-shadow: none !important; border: 1px solid #ccc !important; }
 }

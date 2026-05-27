@@ -76,9 +76,36 @@
     toastTm = setTimeout(() => t.classList.remove('show'), 2600);
   }
 
+  /* ---------- Auth / Role ---------- */
+  const auth = window.YY_AUTH;
+  const session = (auth && auth.getSession && auth.getSession()) || null;
+  const isSuper = !!(session && session.role === 'super');
+  const ALL_STORE_ID = 'all';
+
+  // In super mode, allow 'all' as a virtual store
+  if (isSuper && !STORES[ALL_STORE_ID]) {
+    STORES[ALL_STORE_ID] = {
+      id: ALL_STORE_ID,
+      name: 'ทุกสาขา (Super Admin)',
+      shortName: 'ทุกสาขา',
+      badge: '🛡️',
+      accent: '#1C1917',
+      accentSoft: '#525252',
+      accentTint: '#E5E5E5',
+      accentLight: '#F5F5F4',
+      accentHue: 0,
+      target: 0,
+      tagline: 'มุมมองรวมทุกสาขา',
+      hours: 'รวมทุกสาขา',
+    };
+  }
+
   /* ---------- Data accessors ---------- */
   function getAllRecords()                  { return STORE_IDS.flatMap(id => api.getRecords(id)); }
-  function getRecordsForStore(id)           { return api.getRecords(id); }
+  function getRecordsForStore(id) {
+    if (id === ALL_STORE_ID) return getAllRecords();
+    return api.getRecords(id);
+  }
   function dateRangeCutoff() {
     const d = new Date();
     if (state.range === 'today') return todayISO();
@@ -93,8 +120,9 @@
 
   /* ---------- Shell ---------- */
   function renderShell() {
-    // Store switcher
-    $('#store_switcher').innerHTML = STORE_IDS.map(id => {
+    // Store switcher (super admin sees extra "ทุกสาขา" pill at top)
+    const switcherIds = isSuper ? [ALL_STORE_ID, ...STORE_IDS] : STORE_IDS;
+    $('#store_switcher').innerHTML = switcherIds.map(id => {
       const s = STORES[id];
       const active = id === state.storeId;
       return `<button class="nav-item ${active ? 'active' : ''}" data-store="${id}">
@@ -120,9 +148,14 @@
     `).join('');
 
     // Topbar
-    const s = STORES[state.storeId];
+    const s = STORES[state.storeId] || STORES[STORE_IDS[0]];
     const av = $('#nav_avatar'); if (av) av.textContent = s.badge;
     const us = $('#nav_user_sub'); if (us) us.textContent = s.shortName + ' workspace';
+    const ur = $('#nav_user_role');
+    if (ur) ur.textContent =
+      isSuper ? '🛡️ Super Admin' :
+      session && session.role === 'admin' ? '📊 ผู้จัดการ' :
+      session && session.role === 'staff' ? '👤 พนักงาน' : 'Admin';
 
     // API connection pill
     const hp = $('#topbar_hook');
@@ -201,6 +234,15 @@
 
       const userChip = e.target.closest('#user_chip');
       if (userChip) { switchView('settings'); return; }
+
+      const logoutBtn = e.target.closest('#btn_logout');
+      if (logoutBtn) {
+        if (confirm('ออกจากระบบใช่ไหม?')) {
+          if (auth && auth.logout) auth.logout();
+          location.replace('./start.html');
+        }
+        return;
+      }
     });
 
     document.addEventListener('input', (e) => {
@@ -641,14 +683,19 @@
    *  VIEW: PRODUCTS
    * ============================================================ */
   VIEW_RENDERERS.products = function (root) {
-    const sections = MENUS[state.storeId] || [];
-    const items = sections.flatMap(s => s.items.map(i => ({ ...i, section: s.label })));
+    const MS = window.YY_MENU_STORE;
+    if (state.storeId === ALL_STORE_ID) {
+      root.innerHTML = `<div class="card p-6 text-center muted">เลือกร้านที่ต้องการแก้ไขเมนู (ไม่ใช่ "ทุกสาขา")</div>`;
+      return;
+    }
+    const sections = MS ? MS.getStoreMenus(state.storeId) : (MENUS[state.storeId] || []);
+    const items = sections.flatMap(s => s.items.map(i => ({ ...i, section: s.label, sectionId: s.cat })));
     const filt = state.search ? items.filter(i => (i.th + ' ' + i.en).toLowerCase().includes(state.search.toLowerCase())) : items;
 
-    // Compute revenue per item from records
+    // Revenue per item from paid orders
     const counter = {};
     getRecordsForStore(state.storeId).filter(r => r.status === 'paid').forEach(r => {
-      (r.items || []).forEach(it => {
+      (r.items || r.lines || []).forEach(it => {
         counter[it.itemId] = (counter[it.itemId] || 0) + (it.total || 0);
       });
     });
@@ -657,33 +704,286 @@
       <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-bold" style="font-family:var(--font-display)">สินค้า / เมนู</h1>
-          <p class="muted text-sm mt-1">${STORES[state.storeId].name} · ${items.length} รายการ</p>
+          <p class="muted text-sm mt-1">${STORES[state.storeId].name} · ${items.length} รายการ · แก้ไขได้ทันที</p>
         </div>
-        <button class="btn btn-primary">+ เพิ่มเมนู</button>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button class="btn btn-soft" id="prod_addcat">+ หมวดใหม่</button>
+          <button class="btn btn-primary" id="prod_add">+ เพิ่มเมนู</button>
+        </div>
       </div>
-      <div class="card overflow-x-auto">
-        <table class="tbl">
-          <thead><tr><th>เมนู</th><th>หมวด</th><th class="text-right">ราคา</th><th class="text-right">ต้นทุน</th><th class="text-right">Margin</th><th class="text-right">รายได้รวม</th></tr></thead>
-          <tbody>
-            ${filt.map(it => {
-              const rev = counter[it.id] || 0;
-              const margin = it.basePrice ? Math.round((it.basePrice - it.cost) / it.basePrice * 100) : 0;
-              return `
+
+      ${sections.map(sec => `
+        <div class="card p-5 mb-4">
+          <div class="flex items-center justify-between mb-3 gap-2 flex-wrap">
+            <div class="flex items-center gap-2">
+              <h3 class="font-semibold text-base">${escHtml(sec.label)}</h3>
+              ${sec.en ? `<span class="muted text-xs">· ${escHtml(sec.en)}</span>` : ''}
+              <span class="pill" style="background:var(--surface-2);font-size:11px;padding:2px 8px">${sec.items.length}</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <button class="btn btn-icon" data-edit-cat="${sec.cat}" title="แก้ชื่อหมวด">✏️</button>
+              <button class="btn btn-icon danger" data-del-cat="${sec.cat}" title="ลบหมวด">🗑</button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="tbl">
+              <thead>
                 <tr>
-                  <td><div class="font-semibold">${escHtml(it.th)}</div><div class="muted-2 text-xs">${escHtml(it.en)}</div></td>
-                  <td class="muted text-xs">${escHtml(it.section)}</td>
-                  <td class="text-right num font-bold">${baht(it.basePrice)}</td>
-                  <td class="text-right num muted">${baht(it.cost)}</td>
-                  <td class="text-right"><span class="pill ${margin >= 50 ? 'pill-pos' : margin >= 30 ? 'pill-warn' : 'pill-neg'}">${margin}%</span></td>
-                  <td class="text-right num accent font-bold">${baht(rev)}</td>
+                  <th>เมนู</th>
+                  <th class="text-right">ราคา</th>
+                  <th class="text-right">ต้นทุน</th>
+                  <th class="text-right">Margin</th>
+                  <th class="text-right">รายได้รวม</th>
+                  <th class="text-right" style="width:90px">จัดการ</th>
                 </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                ${sec.items
+                  .filter(it => !state.search || (it.th + ' ' + (it.en || '')).toLowerCase().includes((state.search || '').toLowerCase()))
+                  .map(it => {
+                    const rev = counter[it.id] || 0;
+                    const margin = it.basePrice ? Math.round((it.basePrice - it.cost) / it.basePrice * 100) : 0;
+                    const inactive = it.active === false;
+                    return `
+                      <tr style="${inactive ? 'opacity:.5' : ''}">
+                        <td>
+                          <div class="font-semibold">${escHtml(it.th)}</div>
+                          <div class="muted-2 text-xs">${escHtml(it.en || '')}${inactive ? ' · <em>ปิดอยู่</em>' : ''}</div>
+                        </td>
+                        <td class="text-right num font-bold">${baht(it.basePrice)}</td>
+                        <td class="text-right num muted">${baht(it.cost)}</td>
+                        <td class="text-right">
+                          <span class="pill ${margin >= 50 ? 'pill-pos' : margin >= 30 ? 'pill-warn' : 'pill-neg'}">${margin}%</span>
+                        </td>
+                        <td class="text-right num accent font-bold">${baht(rev)}</td>
+                        <td class="text-right">
+                          <button class="btn btn-icon" data-toggle-item="${it.id}" title="${inactive ? 'เปิดใช้' : 'ปิดใช้'}">${inactive ? '👁️' : '🚫'}</button>
+                          <button class="btn btn-icon" data-edit-item="${it.id}" title="แก้ไข">✏️</button>
+                          <button class="btn btn-icon danger" data-del-item="${it.id}" title="ลบ">🗑</button>
+                        </td>
+                      </tr>`;
+                  }).join('')}
+                ${sec.items.length === 0 ? `<tr><td colspan="6" class="text-center muted py-4">— ยังไม่มีเมนูในหมวดนี้ —</td></tr>` : ''}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `).join('') || `<div class="card p-6 text-center muted">ยังไม่มีหมวด — กด "+ หมวดใหม่" เพื่อเริ่มสร้างเมนู</div>`}
+
+      <div class="card p-4 mt-4 flex flex-wrap items-center gap-3 justify-between">
+        <div class="muted text-sm">
+          💡 การแก้ไขเมนูจะมีผลทันทีในระบบ POS และเมนูลูกค้า
+        </div>
+        <button class="btn btn-soft danger" id="prod_reset">↺ คืนค่าเริ่มต้น (ทั้งร้าน)</button>
       </div>
     `;
+
+    // Bindings
+    root.addEventListener('click', onProductClick);
   };
+
+  function onProductClick(e) {
+    const MS = window.YY_MENU_STORE;
+    if (!MS) return;
+
+    const addBtn = e.target.closest('#prod_add');
+    if (addBtn) { openItemEditor(null); return; }
+
+    const addCat = e.target.closest('#prod_addcat');
+    if (addCat) { openCategoryEditor(null); return; }
+
+    const reset = e.target.closest('#prod_reset');
+    if (reset) {
+      if (confirm('คืนค่าเมนูเริ่มต้นของร้านนี้? ข้อมูลที่แก้ไขจะหายทั้งหมด')) {
+        MS.resetStore(state.storeId);
+        toast('คืนค่าเรียบร้อย', 'ok');
+        renderView();
+      }
+      return;
+    }
+
+    const editItem = e.target.closest('[data-edit-item]');
+    if (editItem) {
+      const id = editItem.dataset.editItem;
+      const item = findItemById(id);
+      if (item) openItemEditor(item);
+      return;
+    }
+
+    const delItem = e.target.closest('[data-del-item]');
+    if (delItem) {
+      const id = delItem.dataset.delItem;
+      const it = findItemById(id);
+      if (it && confirm(`ลบเมนู "${it.th}" ใช่ไหม?`)) {
+        MS.deleteItem(state.storeId, id);
+        toast('ลบเมนูแล้ว', 'ok');
+        renderView();
+      }
+      return;
+    }
+
+    const toggle = e.target.closest('[data-toggle-item]');
+    if (toggle) {
+      const id = toggle.dataset.toggleItem;
+      const it = findItemById(id);
+      if (it) {
+        MS.setItemActive(state.storeId, id, it.active === false);
+        renderView();
+      }
+      return;
+    }
+
+    const editCat = e.target.closest('[data-edit-cat]');
+    if (editCat) {
+      const id = editCat.dataset.editCat;
+      const cats = MS.getStoreMenus(state.storeId);
+      const cat = cats.find(c => c.cat === id);
+      if (cat) openCategoryEditor(cat);
+      return;
+    }
+
+    const delCat = e.target.closest('[data-del-cat]');
+    if (delCat) {
+      const id = delCat.dataset.delCat;
+      const cats = MS.getStoreMenus(state.storeId);
+      const cat = cats.find(c => c.cat === id);
+      if (cat && confirm(`ลบหมวด "${cat.label}" และเมนู ${cat.items.length} รายการ?`)) {
+        MS.deleteCategory(state.storeId, id);
+        toast('ลบหมวดแล้ว', 'ok');
+        renderView();
+      }
+      return;
+    }
+  }
+
+  function findItemById(id) {
+    const MS = window.YY_MENU_STORE;
+    if (!MS) return null;
+    const cats = MS.getStoreMenus(state.storeId);
+    for (const c of cats) {
+      const it = c.items.find(i => i.id === id);
+      if (it) return { ...it, cat: c.cat };
+    }
+    return null;
+  }
+
+  function openItemEditor(item) {
+    const MS = window.YY_MENU_STORE;
+    const cats = MS.getStoreMenus(state.storeId);
+    const isNew = !item;
+    const data = item || { id: 'item-' + Date.now(), cat: cats[0]?.cat || '', th: '', en: '', basePrice: 0, cost: 0, active: true };
+
+    showModal(`
+      <h3 class="text-lg font-bold mb-3">${isNew ? '➕ เพิ่มเมนูใหม่' : '✏️ แก้ไขเมนู'}</h3>
+      <div class="space-y-3">
+        <label class="block">
+          <span class="text-xs muted">ชื่อเมนู (ไทย)</span>
+          <input id="ie_th" class="input mt-1 w-full" value="${escAttr(data.th)}" placeholder="เช่น นมตุ๋นน้ำผึ้ง" />
+        </label>
+        <label class="block">
+          <span class="text-xs muted">ชื่อ (อังกฤษ)</span>
+          <input id="ie_en" class="input mt-1 w-full" value="${escAttr(data.en || '')}" placeholder="Honey Milk" />
+        </label>
+        <label class="block">
+          <span class="text-xs muted">หมวด</span>
+          <select id="ie_cat" class="input mt-1 w-full">
+            ${cats.map(c => `<option value="${c.cat}" ${c.cat === data.cat ? 'selected' : ''}>${escHtml(c.label)}</option>`).join('')}
+          </select>
+        </label>
+        <div class="grid grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-xs muted">ราคาขาย (บาท)</span>
+            <input id="ie_price" type="number" min="0" class="input mt-1 w-full" value="${data.basePrice || 0}" />
+          </label>
+          <label class="block">
+            <span class="text-xs muted">ต้นทุน (บาท)</span>
+            <input id="ie_cost" type="number" min="0" class="input mt-1 w-full" value="${data.cost || 0}" />
+          </label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button class="btn btn-soft" id="ie_cancel">ยกเลิก</button>
+        <button class="btn btn-primary" id="ie_save">💾 บันทึก</button>
+      </div>
+    `);
+
+    document.getElementById('ie_cancel').onclick = closeModal;
+    document.getElementById('ie_save').onclick = () => {
+      const out = {
+        ...data,
+        th:        document.getElementById('ie_th').value.trim(),
+        en:        document.getElementById('ie_en').value.trim(),
+        cat:       document.getElementById('ie_cat').value,
+        basePrice: Number(document.getElementById('ie_price').value) || 0,
+        cost:      Number(document.getElementById('ie_cost').value) || 0,
+        store:     state.storeId,
+        active:    data.active !== false,
+      };
+      if (!out.th) { alert('ใส่ชื่อเมนูภาษาไทย'); return; }
+      if (!out.cat) { alert('เลือกหมวด'); return; }
+      MS.upsertItem(state.storeId, out);
+      closeModal();
+      toast(isNew ? 'เพิ่มเมนูแล้ว' : 'บันทึกแล้ว', 'ok');
+      renderView();
+    };
+  }
+
+  function openCategoryEditor(cat) {
+    const MS = window.YY_MENU_STORE;
+    const isNew = !cat;
+    const data = cat || { cat: 'cat-' + Date.now(), label: '', en: '', items: [] };
+    showModal(`
+      <h3 class="text-lg font-bold mb-3">${isNew ? '➕ เพิ่มหมวดใหม่' : '✏️ แก้ไขหมวด'}</h3>
+      <div class="space-y-3">
+        <label class="block">
+          <span class="text-xs muted">ชื่อหมวด (ไทย)</span>
+          <input id="ce_label" class="input mt-1 w-full" value="${escAttr(data.label)}" placeholder="เช่น เมนูพิเศษ" />
+        </label>
+        <label class="block">
+          <span class="text-xs muted">ชื่อ (อังกฤษ — ไม่บังคับ)</span>
+          <input id="ce_en" class="input mt-1 w-full" value="${escAttr(data.en || '')}" placeholder="Special Menu" />
+        </label>
+      </div>
+      <div class="flex justify-end gap-2 mt-5">
+        <button class="btn btn-soft" id="ce_cancel">ยกเลิก</button>
+        <button class="btn btn-primary" id="ce_save">💾 บันทึก</button>
+      </div>
+    `);
+    document.getElementById('ce_cancel').onclick = closeModal;
+    document.getElementById('ce_save').onclick = () => {
+      const out = {
+        ...data,
+        label: document.getElementById('ce_label').value.trim(),
+        en:    document.getElementById('ce_en').value.trim(),
+      };
+      if (!out.label) { alert('ใส่ชื่อหมวด'); return; }
+      MS.upsertCategory(state.storeId, out);
+      closeModal();
+      toast(isNew ? 'เพิ่มหมวดแล้ว' : 'บันทึกแล้ว', 'ok');
+      renderView();
+    };
+  }
+
+  // ── Simple modal helpers (reuse #yy_modal if exists, else create) ──
+  function showModal(html) {
+    let bd = document.getElementById('yy_modal');
+    if (!bd) {
+      bd = document.createElement('div');
+      bd.id = 'yy_modal';
+      bd.style.cssText = `
+        position:fixed;inset:0;background:rgba(15,15,15,.5);backdrop-filter:blur(6px);
+        z-index:9999;display:none;align-items:flex-start;justify-content:center;padding:6vh 14px;overflow-y:auto;
+      `;
+      bd.addEventListener('click', (e) => { if (e.target === bd) closeModal(); });
+      document.body.appendChild(bd);
+    }
+    bd.innerHTML = `<div class="card" style="max-width:460px;width:100%;padding:22px;border-radius:16px;background:var(--surface);box-shadow:0 24px 60px rgba(0,0,0,.25);animation:popIn .22s cubic-bezier(.2,.8,.2,1)">${html}</div>`;
+    bd.style.display = 'flex';
+  }
+  function closeModal() {
+    const bd = document.getElementById('yy_modal');
+    if (bd) bd.style.display = 'none';
+  }
 
   /* ============================================================
    *  VIEW: INVENTORY
@@ -1098,8 +1398,57 @@
         </div>
       </div>
 
+      <div class="card p-6 mb-4">
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <div>
+            <h3 class="font-semibold">🔐 รหัส PIN พนักงาน</h3>
+            <p class="muted-2 text-xs mt-1">เปลี่ยนรหัสเข้าระบบของแต่ละร้าน</p>
+          </div>
+          ${isSuper ? '<span class="pill pill-pos">Super Admin</span>' : ''}
+        </div>
+        <div class="overflow-x-auto">
+          <table class="tbl">
+            <thead><tr><th>ร้าน</th><th>PIN พนักงาน (POS)</th><th>PIN ผู้จัดการ (Admin)</th><th></th></tr></thead>
+            <tbody>
+              ${STORE_IDS.map(id => `
+                <tr>
+                  <td><b>${STORES[id].badge} ${STORES[id].shortName}</b></td>
+                  <td><input class="inp mono" data-pin="staff:${id}" type="text" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" value="" placeholder="••••" style="width:90px"/></td>
+                  <td><input class="inp mono" data-pin="admin:${id}" type="text" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" value="" placeholder="••••" style="width:90px"/></td>
+                  <td><button class="btn btn-soft" data-savepin="${id}">บันทึก</button></td>
+                </tr>
+              `).join('')}
+              ${isSuper ? `
+                <tr style="background:var(--surface-2)">
+                  <td colspan="2"><b>🛡️ Super Admin PIN (ทุกร้าน)</b></td>
+                  <td><input class="inp mono" data-pin="super:_global" type="text" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" value="" placeholder="••••" style="width:90px"/></td>
+                  <td><button class="btn btn-soft" data-savepin="super">บันทึก</button></td>
+                </tr>` : ''}
+            </tbody>
+          </table>
+        </div>
+        <div class="text-xs muted-2 mt-3">⚠️ PIN ต้องเป็นตัวเลข 4 หลัก · ปล่อยว่างไว้เพื่อไม่เปลี่ยน · ค่าเริ่มต้น: staff=1234, admin=5678, super=9999</div>
+      </div>
+
+      <div class="card p-6 mb-4">
+        <h3 class="font-semibold mb-3">🎨 ธีมสี (ปรับสีร้าน)</h3>
+        <div class="grid sm:grid-cols-3 gap-3">
+          ${STORE_IDS.map(id => `
+            <div class="surface-2 rounded-xl p-4">
+              <div class="flex items-center gap-2 mb-2">
+                <div style="width:24px;height:24px;border-radius:6px;background:${STORES[id].accent}"></div>
+                <b>${STORES[id].shortName}</b>
+              </div>
+              <label class="lbl text-xs">สีหลัก</label>
+              <input type="color" data-theme="${id}" value="${STORES[id].accent}" style="width:100%;height:36px;border-radius:8px;border:1px solid var(--border)" />
+            </div>
+          `).join('')}
+        </div>
+        <div class="text-xs muted-2 mt-3">เปลี่ยนสีจะมีผลทันทีในระบบ POS และเมนูลูกค้า</div>
+      </div>
+
       <div class="card p-6">
-        <h3 class="font-semibold mb-3">ขั้นตอน Deploy</h3>
+        <h3 class="font-semibold mb-3">📘 ขั้นตอน Deploy</h3>
         <ol class="text-sm space-y-2" style="padding-left:20px;list-style:decimal">
           <li>สร้าง Google Sheet ใหม่ (เปล่า) แล้วคัดลอก <span class="mono">Sheet ID</span> จาก URL</li>
           <li>เปิด <b>Extensions → Apps Script</b>, ลบโค้ดเดิม วางไฟล์ <span class="mono">backend/Code.gs</span></li>
@@ -1110,6 +1459,44 @@
         </ol>
       </div>
     `;
+
+    // PIN save handlers
+    root.querySelectorAll('[data-savepin]').forEach(btn => {
+      btn.onclick = () => {
+        const scope = btn.dataset.savepin;
+        if (scope === 'super') {
+          const v = root.querySelector('[data-pin="super:_global"]').value.trim();
+          if (!v) return;
+          const r = auth.setPin('super', null, v);
+          if (r.ok) { toast('บันทึก PIN Super Admin แล้ว', 'ok'); }
+          else      { toast(r.error, 'er'); }
+        } else {
+          const sv = root.querySelector(`[data-pin="staff:${scope}"]`).value.trim();
+          const av = root.querySelector(`[data-pin="admin:${scope}"]`).value.trim();
+          let saved = 0, err = null;
+          if (sv) { const r = auth.setPin('staff', scope, sv); if (r.ok) saved++; else err = r.error; }
+          if (av) { const r = auth.setPin('admin', scope, av); if (r.ok) saved++; else err = r.error; }
+          if (err) toast(err, 'er');
+          else if (saved) toast(`บันทึก PIN ${STORES[scope].shortName} แล้ว (${saved})`, 'ok');
+          else toast('ใส่ PIN ใหม่ก่อน', 'info');
+        }
+      };
+    });
+
+    // Theme color handlers (live preview, save on change)
+    root.querySelectorAll('[data-theme]').forEach(input => {
+      input.onchange = () => {
+        const sid = input.dataset.theme;
+        const newColor = input.value;
+        // Save override
+        const overrides = JSON.parse(localStorage.getItem('yy.themeOverrides') || '{}');
+        overrides[sid] = newColor;
+        localStorage.setItem('yy.themeOverrides', JSON.stringify(overrides));
+        STORES[sid].accent = newColor;
+        if (sid === state.storeId) applyAccent();
+        toast(`สี ${STORES[sid].shortName} เปลี่ยนแล้ว`, 'ok');
+      };
+    });
 
     $('#set_save').onclick = () => {
       api.setApiUrl($('#set_api').value.trim());

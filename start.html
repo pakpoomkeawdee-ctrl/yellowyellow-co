@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#FAFAF9" />
+<title>yellowyellow.co — เลือกสาขา</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Kanit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="./assets/styles.css" />
+<style>
+  :root {
+    --hero-grad-1: #fef3c7;
+    --hero-grad-2: #ffedd5;
+    --hero-grad-3: #fef2f2;
+  }
+  body {
+    background:
+      radial-gradient(1100px 640px at 80% -10%, var(--hero-grad-2), transparent 60%),
+      radial-gradient(900px 560px at -10% 110%, var(--hero-grad-3), transparent 60%),
+      radial-gradient(1200px 720px at 50% 50%, var(--hero-grad-1), transparent 70%),
+      var(--bg);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Brand bar ──────────────────────────────── */
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+    padding: 18px 20px;
+  }
+  .brand-mark {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: #FACC15;
+    color: #422006;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-family: var(--font-display); font-size: 18px;
+    box-shadow: 0 4px 14px rgba(250,204,21,.35);
+  }
+  .brand-name {
+    font-family: var(--font-display);
+    font-weight: 700; font-size: 17px;
+    line-height: 1;
+  }
+  .brand-sub {
+    font-size: 11px; color: var(--muted);
+    margin-top: 3px;
+  }
+  .brand-side {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    font-size: 12px; font-weight: 500;
+  }
+  .pill .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--pos); }
+
+  /* ── Hero ───────────────────────────────────── */
+  .hero {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 20px 20px 36px;
+    text-align: center;
+    width: 100%;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.75);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    font-size: 12px; font-weight: 600;
+    color: var(--text-2);
+    margin-bottom: 18px;
+    animation: floatIn .55s cubic-bezier(.2,.8,.2,1);
+  }
+  .hero-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(28px, 5.5vw, 46px);
+    line-height: 1.08;
+    letter-spacing: -.02em;
+    margin: 0;
+    color: var(--text);
+    animation: floatIn .65s cubic-bezier(.2,.8,.2,1) .05s both;
+  }
+  .hero-title .accent {
+    background: linear-gradient(135deg, #F59E0B, #EF4444 60%, #7C3AED);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+  }
+  .hero-lede {
+    margin: 14px auto 0;
+    max-width: 620px;
+    font-size: 15.5px;
+    color: var(--text-2);
+    line-height: 1.55;
+    animation: floatIn .7s cubic-bezier(.2,.8,.2,1) .1s both;
+  }
+
+  /* ── Store grid ─────────────────────────────── */
+  .grid {
+    max-width: 1180px;
+    margin: 8px auto 30px;
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+  @media (max-width: 920px) {
+    .grid { grid-template-columns: 1fr; gap: 14px; padding-bottom: 18px; }
+  }
+  .store-card {
+    --store: #1E40AF; --store-soft: #3B82F6; --store-tint: #DBEAFE;
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,.7);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    box-shadow: var(--shadow);
+    transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s, border-color .25s;
+    position: relative;
+    overflow: hidden;
+    animation: cardIn .6s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .store-card:nth-child(1) { animation-delay: .12s; }
+  .store-card:nth-child(2) { animation-delay: .2s; }
+  .store-card:nth-child(3) { animation-delay: .28s; }
+  .store-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--store-tint), transparent 55%);
+    opacity: .55;
+    pointer-events: none;
+    transition: opacity .25s;
+  }
+  .store-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--store-soft);
+  }
+  .store-card:hover::before { opacity: .85; }
+  .store-card > * { position: relative; }
+
+  .badge-circle {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--store), var(--store-soft));
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px;
+    box-shadow: 0 8px 20px rgba(0,0,0,.12);
+  }
+  .store-name {
+    font-family: var(--font-display);
+    font-weight: 700; font-size: 22px;
+    margin: 14px 0 4px;
+    letter-spacing: -.01em;
+  }
+  .store-tagline {
+    font-size: 13.5px;
+    color: var(--text-2);
+    margin: 0 0 10px;
+  }
+  .store-meta {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 16px;
+  }
+  .meta-chip {
+    font-size: 11px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.75);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    font-weight: 500;
+  }
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .btn {
+    padding: 11px 14px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    border: 1px solid transparent;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    transition: transform .12s, background .15s, border-color .15s, box-shadow .15s;
+    min-height: 44px;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary {
+    background: var(--store);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(0,0,0,.12);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 8px 22px rgba(0,0,0,.18);
+  }
+  .btn-ghost {
+    background: rgba(255,255,255,.75);
+    color: var(--text);
+    border-color: var(--border);
+  }
+  .btn-ghost:hover { background: #fff; border-color: var(--store-soft); }
+  .btn-row { grid-column: 1 / -1; }
+
+  /* Last-pick indicator */
+  .last-pick {
+    position: absolute;
+    top: 14px; right: 14px;
+    font-size: 10.5px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--store);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0,0,0,.18);
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity .25s, transform .25s;
+  }
+  .store-card.last .last-pick { opacity: 1; transform: translateY(0); }
+
+  /* ── Bottom: Super Admin ───────────────────── */
+  .super {
+    margin: auto auto 24px;
+    max-width: 1180px;
+    width: 100%;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .super-btn {
+    padding: 10px 18px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.75);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-2);
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: all .15s;
+    min-height: 44px;
+  }
+  .super-btn:hover { background: #fff; border-color: var(--text); color: var(--text); }
+  .super-sub { font-size: 11.5px; color: var(--muted); }
+
+  /* ── Footer ─────────────────────────────────── */
+  .footer {
+    text-align: center;
+    padding: 18px 20px 24px;
+    color: var(--muted);
+    font-size: 11.5px;
+  }
+  .footer a { color: var(--text-2); text-decoration: none; }
+
+  /* ── PIN modal ──────────────────────────────── */
+  .modal-bd {
+    position: fixed; inset: 0;
+    background: rgba(15, 15, 15, .45);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 9999;
+    animation: fadeIn .18s ease-out;
+    padding: 20px;
+  }
+  .modal-bd.show { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 26px 24px 22px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+    animation: popIn .22s cubic-bezier(.2,.8,.2,1);
+  }
+  .modal h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    margin: 4px 0 6px;
+    font-size: 18px;
+  }
+  .modal p { margin: 0 0 16px; color: var(--text-2); font-size: 13.5px; }
+  .pin-dots {
+    display: flex; justify-content: center; gap: 12px;
+    margin: 8px 0 14px;
+  }
+  .pin-dot {
+    width: 14px; height: 14px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1.5px solid var(--border-strong);
+    transition: all .15s;
+  }
+  .pin-dot.on {
+    background: var(--store, var(--text));
+    border-color: var(--store, var(--text));
+    transform: scale(1.1);
+  }
+  .pin-err { animation: shake .35s cubic-bezier(.36,.07,.19,.97); }
+  .pin-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .pin-key {
+    padding: 14px 0;
+    border-radius: 14px;
+    background: var(--surface-2);
+    font-size: 20px;
+    font-weight: 600;
+    font-family: var(--font-num);
+    transition: background .12s, transform .08s;
+    min-height: 52px;
+  }
+  .pin-key:hover { background: var(--border); }
+  .pin-key:active { transform: scale(.96); background: var(--border-strong); }
+  .pin-key.action { font-size: 15px; color: var(--muted); }
+  .pin-hint { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
+  .pin-cancel {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: 8px;
+  }
+  .pin-cancel:hover { color: var(--text); }
+
+  /* ── Animations ─────────────────────────────── */
+  @keyframes floatIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(14px) scale(.985); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(.94); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Brand bar -->
+<header class="brand">
+  <div class="brand-mark">yy</div>
+  <div>
+    <div class="brand-name">yellowyellow.co</div>
+    <div class="brand-sub">ระบบจัดการร้านอาหารครบวงจร</div>
+  </div>
+  <div class="brand-side">
+    <span class="pill"><span class="dot"></span> ออนไลน์</span>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+  <span class="hero-eyebrow">👋 ยินดีต้อนรับ · เลือกสาขาที่ต้องการเปิด</span>
+  <h1 class="hero-title">เลือก<span class="accent">สาขาของคุณ</span>เพื่อเริ่มต้น</h1>
+  <p class="hero-lede">
+    เลือกร้านที่ต้องการเข้าใช้งาน — ลูกค้าสั่งอาหารผ่านเมนู
+    หรือพนักงาน/ผู้จัดการเข้าสู่ระบบเพื่อจัดการร้าน
+  </p>
+</section>
+
+<!-- Store grid -->
+<main class="grid" id="grid"></main>
+
+<!-- Super Admin -->
+<section class="super">
+  <button class="super-btn" id="btn_super">
+    🛡️ เข้าสู่ระบบ Super Admin (ทุกร้าน)
+  </button>
+  <div class="super-sub">สำหรับผู้บริหารดูข้อมูลรวมทุกสาขา</div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  © yellowyellow.co · <a href="https://github.com/pakpoomkeawdee-ctrl/yellowyellow-co" target="_blank">GitHub</a>
+</footer>
+
+<!-- PIN modal -->
+<div class="modal-bd" id="pin_modal">
+  <div class="modal">
+    <h3 id="pin_title">ใส่ PIN พนักงาน</h3>
+    <p id="pin_sub">ใส่รหัส 4 หลักเพื่อเข้าสู่ระบบ</p>
+    <div class="pin-dots" id="pin_dots">
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+    <div class="pin-pad" id="pin_pad">
+      <button class="pin-key" data-k="1">1</button>
+      <button class="pin-key" data-k="2">2</button>
+      <button class="pin-key" data-k="3">3</button>
+      <button class="pin-key" data-k="4">4</button>
+      <button class="pin-key" data-k="5">5</button>
+      <button class="pin-key" data-k="6">6</button>
+      <button class="pin-key" data-k="7">7</button>
+      <button class="pin-key" data-k="8">8</button>
+      <button class="pin-key" data-k="9">9</button>
+      <button class="pin-key action" data-k="clear">เคลียร์</button>
+      <button class="pin-key" data-k="0">0</button>
+      <button class="pin-key action" data-k="back">←</button>
+    </div>
+    <div class="pin-hint" id="pin_hint">ค่าเริ่มต้น: 1234 (พนักงาน) · 9999 (Super Admin)</div>
+    <button class="pin-cancel" id="pin_cancel">ยกเลิก</button>
+  </div>
+</div>
+
+<script src="./assets/config.js"></script>
+<script src="./assets/auth.js"></script>
+<script>
+(function () {
+  'use strict';
+  const { STORES, STORE_IDS } = window.YY_CONFIG;
+  const auth = window.YY_AUTH;
+
+  const lastStore = localStorage.getItem('yy.activeStore') || '';
+
+  // ── Render store cards ────────────────────────
+  const grid = document.getElementById('grid');
+  grid.innerHTML = STORE_IDS.map(id => {
+    const s = STORES[id];
+    return `
+    <article class="store-card ${id === lastStore ? 'last' : ''}"
+             style="--store:${s.accent};--store-soft:${s.accentSoft};--store-tint:${s.accentTint}"
+             data-store="${id}">
+      <span class="last-pick">เปิดล่าสุด</span>
+      <div class="badge-circle">${s.badge}</div>
+      <h2 class="store-name">${s.name}</h2>
+      <p class="store-tagline">${s.tagline}</p>
+      <div class="store-meta">
+        <span class="meta-chip">⏰ ${s.hours}</span>
+        <span class="meta-chip">🍴 ${s.cuisine}</span>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" data-action="menu" data-store="${id}">🛍️ เมนูลูกค้า</button>
+        <button class="btn btn-ghost" data-action="pos" data-store="${id}">👤 พนักงาน</button>
+        <button class="btn btn-ghost btn-row" data-action="admin" data-store="${id}">📊 หลังบ้านผู้จัดการ</button>
+      </div>
+    </article>`;
+  }).join('');
+
+  // ── Click router ──────────────────────────────
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const storeId = btn.dataset.store;
+
+    // Remember last store
+    if (storeId) localStorage.setItem('yy.activeStore', storeId);
+
+    if (action === 'menu') {
+      // Customer flow — no auth needed
+      go(`./menu.html?store=${storeId}`);
+    } else if (action === 'pos') {
+      // Staff PIN required
+      requirePin('staff', storeId, () => go(`./pos.html?store=${storeId}`));
+    } else if (action === 'admin') {
+      // Admin PIN required
+      requirePin('admin', storeId, () => go(`./yellowyellow.html?store=${storeId}`));
+    }
+  });
+
+  document.getElementById('btn_super').addEventListener('click', () => {
+    requirePin('super', null, () => go(`./yellowyellow.html?store=nmtun&super=1`));
+  });
+
+  function go(url) {
+    document.body.style.transition = 'opacity .18s';
+    document.body.style.opacity = '.2';
+    setTimeout(() => location.href = url, 160);
+  }
+
+  // ── PIN flow ──────────────────────────────────
+  const modal = document.getElementById('pin_modal');
+  const dots  = Array.from(document.querySelectorAll('#pin_dots .pin-dot'));
+  const pad   = document.getElementById('pin_pad');
+  const title = document.getElementById('pin_title');
+  const sub   = document.getElementById('pin_sub');
+  let pinBuf  = '';
+  let pinOnOk = null;
+  let pinRole = '';
+  let pinStore = '';
+
+  function requirePin(role, storeId, onOk) {
+    // If already authed for this role+store, skip
+    if (auth.isAuthed(role, storeId)) { onOk(); return; }
+
+    pinBuf = ''; pinOnOk = onOk; pinRole = role; pinStore = storeId;
+    title.textContent = role === 'super' ? '🛡️ Super Admin'
+                      : role === 'admin' ? '📊 ผู้จัดการ / Admin'
+                      : '👤 พนักงาน / Staff';
+    sub.textContent = role === 'super'
+      ? 'ใส่รหัส 4 หลักเพื่อเข้าสู่ระบบรวมทุกร้าน'
+      : `ใส่รหัส 4 หลักของร้าน ${STORES[storeId]?.shortName || ''}`;
+    if (storeId) {
+      modal.querySelector('.modal').style.setProperty('--store', STORES[storeId].accent);
+    } else {
+      modal.querySelector('.modal').style.setProperty('--store', '#1C1917');
+    }
+    renderDots();
+    modal.classList.add('show');
+  }
+
+  pad.addEventListener('click', (e) => {
+    const k = e.target.closest('[data-k]')?.dataset.k;
+    if (!k) return;
+    if (k === 'clear') { pinBuf = ''; renderDots(); return; }
+    if (k === 'back')  { pinBuf = pinBuf.slice(0, -1); renderDots(); return; }
+    if (pinBuf.length >= 4) return;
+    pinBuf += k;
+    renderDots();
+    if (pinBuf.length === 4) submitPin();
+  });
+
+  function renderDots() {
+    dots.forEach((d, i) => d.classList.toggle('on', i < pinBuf.length));
+  }
+
+  function submitPin() {
+    const ok = auth.tryPin(pinRole, pinStore, pinBuf);
+    if (ok) {
+      modal.classList.remove('show');
+      pinOnOk?.();
+    } else {
+      const m = modal.querySelector('.modal');
+      m.classList.add('pin-err');
+      setTimeout(() => m.classList.remove('pin-err'), 380);
+      pinBuf = '';
+      renderDots();
+    }
+  }
+
+  document.getElementById('pin_cancel').addEventListener('click', () => {
+    modal.classList.remove('show');
+  });
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.remove('show');
+  });
+
+  // Keyboard support
+  document.addEventListener('keydown', (e) => {
+    if (!modal.classList.contains('show')) return;
+    if (e.key === 'Escape') { modal.classList.remove('show'); return; }
+    if (e.key === 'Backspace') { pinBuf = pinBuf.slice(0, -1); renderDots(); return; }
+    if (/^[0-9]$/.test(e.key) && pinBuf.length < 4) {
+      pinBuf += e.key; renderDots();
+      if (pinBuf.length === 4) submitPin();
+    }
+  });
+})();
+</script>
+</body>
+</html>

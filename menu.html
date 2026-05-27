@@ -1,0 +1,519 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#FAFAF9" />
+<title>เมนู — yellowyellow.co</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Kanit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="./assets/styles.css" />
+<style>
+  :root { --store: #1E40AF; --store-soft: #3B82F6; --store-tint: #DBEAFE; --store-light: #EFF6FF; }
+
+  body {
+    background: var(--bg);
+    min-height: 100dvh;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* ── Header (sticky) ───────────────────────── */
+  .top {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+    padding-top: calc(10px + env(safe-area-inset-top));
+  }
+  .back {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .back:hover { background: var(--border); }
+  .head-text { flex: 1; min-width: 0; }
+  .head-name {
+    font-family: var(--font-display);
+    font-weight: 700; font-size: 16px;
+    line-height: 1.1; letter-spacing: -.01em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .head-sub { font-size: 11.5px; color: var(--muted); }
+  .head-call {
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--store);
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 600;
+    flex-shrink: 0;
+    min-height: 38px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+
+  /* ── Hero ──────────────────────────────────── */
+  .hero {
+    padding: 18px 16px 14px;
+    background: linear-gradient(180deg, var(--store-light), transparent);
+  }
+  .hero-title {
+    font-family: var(--font-display);
+    font-weight: 700; font-size: 22px;
+    margin: 0 0 4px;
+    letter-spacing: -.01em;
+  }
+  .hero-sub { font-size: 13.5px; color: var(--text-2); margin: 0; }
+
+  /* ── Search ────────────────────────────────── */
+  .search-wrap {
+    position: sticky; top: 60px; z-index: 40;
+    background: var(--bg);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .search {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 14px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .search:focus { border-color: var(--store); box-shadow: 0 0 0 3px var(--store-tint); }
+
+  /* ── Category strip ────────────────────────── */
+  .cats {
+    position: sticky; top: 116px; z-index: 39;
+    background: var(--bg);
+    padding: 8px 14px 10px;
+    display: flex; gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .cats::-webkit-scrollbar { display: none; }
+  .cat-chip {
+    flex-shrink: 0;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-2);
+    transition: all .15s;
+    min-height: 36px;
+  }
+  .cat-chip.active {
+    background: var(--store);
+    color: #fff;
+    border-color: var(--store);
+    box-shadow: 0 4px 10px rgba(0,0,0,.1);
+  }
+
+  /* ── Menu list ─────────────────────────────── */
+  .menu {
+    padding: 4px 14px 120px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  @media (min-width: 600px) { .menu { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 900px) { .menu { grid-template-columns: 1fr 1fr 1fr; } }
+  .sec-h {
+    grid-column: 1/-1;
+    font-family: var(--font-display);
+    font-weight: 700; font-size: 14px;
+    color: var(--muted);
+    margin-top: 10px; margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex; gap: 12px;
+    transition: transform .12s, box-shadow .15s;
+    position: relative;
+  }
+  .item:hover { box-shadow: var(--shadow); }
+  .item:active { transform: scale(.99); }
+  .item-img {
+    width: 60px; height: 60px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--store-tint), var(--store-light));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+  .item-body { flex: 1; min-width: 0; }
+  .item-name {
+    font-weight: 600; font-size: 15px;
+    line-height: 1.25;
+    margin: 0 0 2px;
+  }
+  .item-en { font-size: 11px; color: var(--muted); margin: 0 0 6px; }
+  .item-price {
+    font-family: var(--font-num);
+    font-weight: 700; font-size: 16px;
+    color: var(--store);
+  }
+  .add-btn {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: var(--store);
+    color: #fff;
+    font-size: 22px;
+    font-weight: 500;
+    align-self: center;
+    flex-shrink: 0;
+    transition: transform .1s;
+  }
+  .add-btn:active { transform: scale(.92); }
+
+  /* ── Cart bar (bottom) ─────────────────────── */
+  .cart-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    z-index: 60;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border);
+    transform: translateY(110%);
+    transition: transform .25s cubic-bezier(.2,.8,.2,1);
+  }
+  .cart-bar.show { transform: translateY(0); }
+  .cart-btn {
+    width: 100%;
+    padding: 13px;
+    border-radius: 14px;
+    background: var(--store);
+    color: #fff;
+    font-size: 15px; font-weight: 600;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 8px 22px rgba(0,0,0,.15);
+    min-height: 50px;
+  }
+  .cart-btn:active { transform: scale(.99); }
+  .cart-count {
+    background: rgba(255,255,255,.25);
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 12px;
+  }
+
+  /* ── Cart drawer ───────────────────────────── */
+  .drawer-bd {
+    position: fixed; inset: 0;
+    background: rgba(15,15,15,.5);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+  }
+  .drawer-bd.show { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    z-index: 101;
+    background: var(--surface);
+    border-radius: 22px 22px 0 0;
+    max-height: 88dvh;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    transform: translateY(100%);
+    transition: transform .28s cubic-bezier(.2,.8,.2,1);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .drawer.show { transform: translateY(0); }
+  .drawer-handle {
+    padding: 10px 0 6px;
+    display: flex; justify-content: center;
+  }
+  .drawer-handle div {
+    width: 40px; height: 4px;
+    background: var(--border-strong);
+    border-radius: 999px;
+  }
+  .drawer-head {
+    padding: 4px 18px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .drawer-title {
+    font-family: var(--font-display);
+    font-weight: 700; font-size: 18px;
+  }
+  .drawer-x {
+    width: 32px; height: 32px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .drawer-body {
+    overflow-y: auto;
+    flex: 1;
+    padding: 8px 14px 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .cart-row {
+    display: flex; gap: 10px;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cart-row:last-child { border-bottom: none; }
+  .cart-info { flex: 1; min-width: 0; }
+  .cart-name { font-weight: 600; font-size: 14.5px; margin: 0 0 4px; }
+  .cart-price { font-family: var(--font-num); font-weight: 600; color: var(--store); font-size: 14px; }
+  .qty {
+    display: inline-flex; align-items: center;
+    background: var(--surface-2);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .qty button {
+    width: 32px; height: 32px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .qty button:active { background: var(--border); }
+  .qty span {
+    min-width: 28px; text-align: center;
+    font-family: var(--font-num);
+    font-weight: 600; font-size: 14px;
+  }
+  .drawer-foot {
+    padding: 14px 18px calc(14px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .totals {
+    display: flex; justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+  .totals .grand {
+    font-family: var(--font-display);
+    font-weight: 700; font-size: 20px;
+  }
+  .place-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    background: var(--store);
+    color: #fff;
+    font-size: 15.5px; font-weight: 600;
+    box-shadow: 0 8px 22px rgba(0,0,0,.15);
+    min-height: 52px;
+  }
+  .place-btn:disabled {
+    opacity: .5;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  /* ── Toast ─────────────────────────────────── */
+  .ok-toast {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
+    background: var(--pos);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: 13.5px; font-weight: 600;
+    box-shadow: 0 8px 22px rgba(5,150,105,.3);
+    opacity: 0;
+    transition: all .25s cubic-bezier(.2,.8,.2,1);
+    z-index: 200;
+    pointer-events: none;
+  }
+  .ok-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── Empty state ───────────────────────────── */
+  .empty {
+    grid-column: 1/-1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .empty-emoji { font-size: 48px; margin-bottom: 10px; }
+
+  /* ── Order tracker ─────────────────────────── */
+  .tracker-bd {
+    position: fixed; inset: 0;
+    background: rgba(15,15,15,.5);
+    backdrop-filter: blur(6px);
+    z-index: 110;
+    display: none;
+    align-items: flex-end; justify-content: center;
+  }
+  .tracker-bd.show { display: flex; animation: fadeIn .2s; }
+  .tracker {
+    background: var(--surface);
+    border-radius: 22px 22px 0 0;
+    width: 100%; max-width: 480px;
+    padding: 24px 22px calc(24px + env(safe-area-inset-bottom));
+    animation: slideUp .3s cubic-bezier(.2,.8,.2,1);
+  }
+  .tracker-emoji {
+    font-size: 56px;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .tracker-no {
+    text-align: center;
+    font-family: var(--font-display);
+    font-weight: 700; font-size: 22px;
+    margin: 0 0 6px;
+  }
+  .tracker-msg {
+    text-align: center;
+    color: var(--text-2);
+    font-size: 13.5px;
+    margin: 0 0 18px;
+  }
+  .steps {
+    display: flex; align-items: center;
+    margin: 18px 4px 24px;
+  }
+  .step {
+    flex: 1;
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .step-dot {
+    width: 24px; height: 24px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 2px solid var(--border-strong);
+    margin: 0 auto 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    color: var(--muted);
+  }
+  .step.done .step-dot {
+    background: var(--store);
+    border-color: var(--store);
+    color: #fff;
+  }
+  .step.active .step-dot {
+    background: var(--store);
+    border-color: var(--store);
+    color: #fff;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  .step.done, .step.active { color: var(--text); font-weight: 600; }
+  .step-conn {
+    height: 2px;
+    background: var(--border-strong);
+    flex-shrink: 0;
+    width: 20px;
+    margin-bottom: 22px;
+  }
+  .step-conn.done { background: var(--store); }
+  .tracker-close {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    background: var(--surface-2);
+    font-weight: 600; font-size: 14px;
+    min-height: 46px;
+  }
+
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,0,0,.2); }
+    50%      { box-shadow: 0 0 0 8px rgba(0,0,0,0); }
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<header class="top">
+  <a href="./start.html" class="back" aria-label="กลับ">←</a>
+  <div class="head-text">
+    <div class="head-name" id="store_name">—</div>
+    <div class="head-sub" id="store_sub">—</div>
+  </div>
+  <button class="head-call" id="btn_call">🛎️ เรียกพนักงาน</button>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+  <h1 class="hero-title" id="hero_title">เลือกเมนูที่อยากทาน</h1>
+  <p class="hero-sub" id="hero_sub">เพิ่มเข้าตะกร้า → กดสั่งซื้อ → รอรับที่โต๊ะ</p>
+</section>
+
+<!-- Search -->
+<div class="search-wrap">
+  <input class="search" id="search" type="search" placeholder="🔍 ค้นหาเมนู..." />
+</div>
+
+<!-- Cat chips -->
+<nav class="cats" id="cats"></nav>
+
+<!-- Menu list -->
+<main class="menu" id="menu"></main>
+
+<!-- Cart bar -->
+<div class="cart-bar" id="cart_bar">
+  <button class="cart-btn" id="cart_btn">
+    <span><span class="cart-count" id="cart_count">0</span> รายการ</span>
+    <span><span id="cart_total">฿0</span> · ดูตะกร้า →</span>
+  </button>
+</div>
+
+<!-- Cart drawer -->
+<div class="drawer-bd" id="drawer_bd"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-handle"><div></div></div>
+  <div class="drawer-head">
+    <span class="drawer-title">🛒 ตะกร้าของคุณ</span>
+    <button class="drawer-x" id="drawer_x">✕</button>
+  </div>
+  <div class="drawer-body" id="drawer_body"></div>
+  <div class="drawer-foot">
+    <div class="totals">
+      <span>ยอดรวม</span>
+      <span class="grand" id="grand">฿0</span>
+    </div>
+    <button class="place-btn" id="place_btn">📨 ส่งคำสั่งไปครัว</button>
+  </div>
+</div>
+
+<!-- Tracker -->
+<div class="tracker-bd" id="tracker_bd">
+  <div class="tracker">
+    <div class="tracker-emoji" id="tk_emoji">📨</div>
+    <div class="tracker-no" id="tk_no">#0000</div>
+    <p class="tracker-msg" id="tk_msg">รอครัวเริ่มทำ...</p>
+    <div class="steps" id="tk_steps"></div>
+    <button class="tracker-close" id="tk_close">ปิด</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="ok-toast" id="ok_toast">✓ เพิ่มเข้าตะกร้าแล้ว</div>
+
+<script src="./assets/config.js"></script>
+<script src="./assets/menus.js"></script>
+<script src="./assets/menu-store.js"></script>
+<script src="./assets/api.js"></script>
+<script src="./assets/auth.js"></script>
+<script src="./assets/menu-app.js"></script>
+</body>
+</html>

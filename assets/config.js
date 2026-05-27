@@ -139,6 +139,20 @@
   };
   const cx = (...a) => a.filter(Boolean).join(' ');
 
+  /* ---------- Apply theme overrides from localStorage (set by admin) ---------- */
+  try {
+    const overrides = JSON.parse(localStorage.getItem('yy.themeOverrides') || '{}');
+    Object.keys(overrides).forEach(sid => {
+      if (STORES[sid]) {
+        STORES[sid].accent = overrides[sid];
+        // Lighten/darken variants from the chosen color
+        STORES[sid].accentSoft  = STORES[sid].accentSoft;
+        STORES[sid].accentTint  = STORES[sid].accentTint;
+        STORES[sid].accentLight = STORES[sid].accentLight;
+      }
+    });
+  } catch {}
+
   /* ---------- Export ---------- */
   root.YY_CONFIG = {
     API_URL:     DEFAULT_API_URL,
