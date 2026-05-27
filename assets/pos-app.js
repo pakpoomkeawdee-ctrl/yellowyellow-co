@@ -849,6 +849,26 @@
   }
 
   function cleanKey(s) { return String(s).replace(/[^a-z0-9-]/gi, '_'); }
+
+  /**
+   * Recompute customizer footer (qty + price) without re-rendering the modal.
+   * Eliminates the flicker that happened when chips were clicked.
+   */
+  function refreshCustomizerFooter() {
+    const m = state.modal;
+    if (!m || m.kind !== 'customizer') return;
+    const it = m.item; const c = state.cust;
+    const tempOpt = it.tempOptions?.find(o => o.id === c.temp);
+    const sizeOpt = it.sizeOptions?.find(o => o.id === c.size);
+    const modList = (it.modifiers || []).filter(x => c.mods.has(x.id));
+    const unit  = (tempOpt?.price ?? sizeOpt?.price ?? it.basePrice) + modList.reduce((a, b) => a + b.price, 0);
+    const total = unit * c.qty;
+    const qtyEl   = document.querySelector('.qty-stepper span');
+    const priceEl = document.querySelector('.primary-btn-price');
+    if (qtyEl)   qtyEl.textContent   = c.qty;
+    if (priceEl) priceEl.textContent = baht(total);
+  }
+
   function optGroup(label, sub, content) {
     return `
       <div class="opt-group">
@@ -1096,17 +1116,51 @@
     if (kind === 'customizer') {
       const it = state.modal.item;
       $('#cust-close').onclick = closeModal;
-      $('#cust-dec').onclick = () => { state.cust.qty = Math.max(1, state.cust.qty - 1); renderModal(); };
-      $('#cust-inc').onclick = () => { state.cust.qty++; renderModal(); };
+      // Quantity stepper (surgical update — no re-render)
+      $('#cust-dec').onclick = () => { state.cust.qty = Math.max(1, state.cust.qty - 1); refreshCustomizerFooter(); };
+      $('#cust-inc').onclick = () => { state.cust.qty++; refreshCustomizerFooter(); };
       $('#cust-note').oninput = (e) => state.cust.note = e.target.value;
-      if (it.tempOptions)  it.tempOptions.forEach(o => $('#cust-temp-' + o.id).onclick = () => { state.cust.temp = o.id; renderModal(); });
-      if (it.sizeOptions)  it.sizeOptions.forEach(o => $('#cust-size-' + o.id).onclick = () => { state.cust.size = o.id; renderModal(); });
-      if (it.types)        it.types.forEach(o => $('#cust-type-' + cleanKey(o)).onclick = () => { state.cust.type = o; renderModal(); });
-      if (it.proteins)     it.proteins.forEach(o => $('#cust-protein-' + cleanKey(o)).onclick = () => { state.cust.protein = o; renderModal(); });
-      if (it.sauces)       it.sauces.forEach(o => $('#cust-sauce-' + cleanKey(o)).onclick = () => { state.cust.sauce = o; renderModal(); });
-      if (it.sweetness)    it.sweetness.forEach(o => $('#cust-sweet-' + cleanKey(o)).onclick = () => { state.cust.sweet = o; renderModal(); });
-      if (it.spice)        it.spice.forEach(o => $('#cust-spice-' + cleanKey(o)).onclick = () => { state.cust.spice = o; renderModal(); });
-      if (it.modifiers)    it.modifiers.forEach(m => $('#cust-mod-' + m.id).onclick = () => { state.cust.mods.has(m.id) ? state.cust.mods.delete(m.id) : state.cust.mods.add(m.id); renderModal(); });
+
+      // Single-choice groups → swap .is-active, refresh footer only (no flicker)
+      function bindGroup(opts, idFn, fieldName) {
+        opts.forEach(o => {
+          const id = idFn(o);
+          const btn = $('#' + id);
+          if (!btn) return;
+          btn.onclick = () => {
+            const val = (typeof o === 'object' && 'id' in o) ? o.id : o;
+            state.cust[fieldName] = val;
+            // Swap .is-active among siblings (same chip-row)
+            const row = btn.closest('.chip-row');
+            if (row) row.querySelectorAll('.chip').forEach(c => c.classList.remove('is-active'));
+            btn.classList.add('is-active');
+            refreshCustomizerFooter();
+          };
+        });
+      }
+
+      if (it.tempOptions) bindGroup(it.tempOptions, o => 'cust-temp-' + o.id,                'temp');
+      if (it.sizeOptions) bindGroup(it.sizeOptions, o => 'cust-size-' + o.id,                'size');
+      if (it.types)       bindGroup(it.types,       o => 'cust-type-' + cleanKey(o),         'type');
+      if (it.proteins)    bindGroup(it.proteins,    o => 'cust-protein-' + cleanKey(o),      'protein');
+      if (it.sauces)      bindGroup(it.sauces,      o => 'cust-sauce-' + cleanKey(o),        'sauce');
+      if (it.sweetness)   bindGroup(it.sweetness,   o => 'cust-sweet-' + cleanKey(o),        'sweet');
+      if (it.spice)       bindGroup(it.spice,       o => 'cust-spice-' + cleanKey(o),        'spice');
+
+      // Multi-toggle (modifiers) — toggle .is-active and refresh footer
+      if (it.modifiers) {
+        it.modifiers.forEach(m => {
+          const btn = $('#cust-mod-' + m.id);
+          if (!btn) return;
+          btn.onclick = () => {
+            const active = state.cust.mods.has(m.id);
+            if (active) { state.cust.mods.delete(m.id); btn.classList.remove('is-active'); }
+            else        { state.cust.mods.add(m.id);    btn.classList.add('is-active'); }
+            refreshCustomizerFooter();
+          };
+        });
+      }
+
       $('#cust-add').onclick = () => addToCart();
     }
 
