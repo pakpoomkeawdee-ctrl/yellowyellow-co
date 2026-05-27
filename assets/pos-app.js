@@ -14,19 +14,26 @@
 (function () {
   'use strict';
 
-  const { STORES, STORE_IDS, STATUS_FLOW, PAYMENT_METHODS, ORDER_TYPES, TABLES, PROMOS, fmt } = window.YY_CONFIG;
+  const { STORES, STORE_IDS, STATUS_FLOW, PAYMENT_METHODS, ORDER_TYPES, DELIVERY_PLATFORMS, orderTypesFor, PROMOS, fmt } = window.YY_CONFIG;
   const { baht, numTH, todayISO, cx } = fmt;
   const MENUS = window.YY_MENUS;
   const api = window.YY_API;
 
+  // Pick a sensible default order type for the active store
+  function defaultOrderTypeFor(sid) {
+    const list = orderTypesFor(sid);
+    return list[0]?.id || 'takeaway';
+  }
+
   /* ---------- 1. State ---------- */
+  const storeIdInit = localStorage.getItem('yy.activeStore') || 'nmtun';
   const state = {
-    storeId:   localStorage.getItem('yy.activeStore') || 'nmtun',
+    storeId:   storeIdInit,
     mode:      localStorage.getItem('yy.mode') || 'customer',   // customer | staff
     activeCat: null,
     cart:      [],
-    orderType: 'dinein',
-    tableNo:   '',
+    orderType: defaultOrderTypeFor(storeIdInit),
+    deliveryPlatform: '',
     customer:  '',
     note:      '',
     discount:  { type: 'fixed', value: 0, label: '' },
@@ -41,6 +48,19 @@
 
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $$(sel, root) { return Array.from((root || document).querySelectorAll(sel)); }
+
+  /** Pretty-print order type, including delivery platform if any */
+  function formatOrderType(r) {
+    const t = ORDER_TYPES.find(o => o.id === r.type);
+    let s = t ? `${t.icon} ${t.label}` : (r.type || '-');
+    if (r.type === 'delivery' && r.deliveryPlatform) {
+      const p = (DELIVERY_PLATFORMS || []).find(p => p.id === r.deliveryPlatform);
+      if (p) s += ` · ${p.label}`;
+    }
+    // Legacy: still surface table number if an old record had one
+    if (r.type === 'dinein' && r.table) s += ` · ${r.table}`;
+    return s;
+  }
 
   function applyStoreAccent() {
     const s = STORES[state.storeId];
@@ -58,6 +78,8 @@
     state.activeCat = null;
     state.cart = [];
     state.search = '';
+    state.orderType = defaultOrderTypeFor(id);
+    state.deliveryPlatform = '';
     applyStoreAccent();
     render();
   }
@@ -334,13 +356,24 @@
         </div>
 
         <div class="cart-type">
-          ${ORDER_TYPES.filter(t => t.id === 'dinein' || t.id === 'takeaway').map(t => `
-            <button class="type-btn ${state.orderType === t.id ? 'is-active' : ''}" data-type="${t.id}">${t.id === 'dinein' ? '🍽️ ทานที่นี่' : '🥡 กลับบ้าน'}</button>
+          ${orderTypesFor(state.storeId).map(t => `
+            <button class="type-btn ${state.orderType === t.id ? 'is-active' : ''}" data-type="${t.id}">${t.icon} ${t.label}</button>
           `).join('')}
         </div>
 
+        ${state.orderType === 'delivery' ? `
+          <div class="cart-info" style="background:var(--surface-2);border-radius:10px;padding:8px;margin-bottom:8px">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:6px">เลือกแพลตฟอร์ม</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px">
+              ${DELIVERY_PLATFORMS.map(p => `
+                <button class="type-btn ${state.deliveryPlatform === p.id ? 'is-active' : ''}" data-dplatform="${p.id}" style="padding:5px 10px;font-size:11.5px;border-radius:999px;min-height:30px">${p.label}</button>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
         <div class="cart-info">
-          <input class="cart-input" id="cart-customer" placeholder="ชื่อลูกค้า (ไม่บังคับ)" value="${escapeAttr(state.customer)}">
+          <input class="cart-input" id="cart-customer" placeholder="${state.orderType === 'delivery' ? 'ชื่อ/เลขออเดอร์ Rider' : 'ชื่อลูกค้า (ไม่บังคับ)'}" value="${escapeAttr(state.customer)}">
           <input class="cart-input" id="cart-note" placeholder="หมายเหตุ" value="${escapeAttr(state.note)}">
         </div>
 
@@ -401,7 +434,15 @@
   }
 
   function bindCart() {
-    $$('.type-btn').forEach(b => b.onclick = () => { state.orderType = b.dataset.type; render(); });
+    $$('[data-type]').forEach(b => b.onclick = () => {
+      state.orderType = b.dataset.type;
+      if (state.orderType !== 'delivery') state.deliveryPlatform = '';
+      render();
+    });
+    $$('[data-dplatform]').forEach(b => b.onclick = () => {
+      state.deliveryPlatform = b.dataset.dplatform;
+      render();
+    });
     $$('.discount-chip').forEach(b => b.onclick = () => {
       const id = b.dataset.promo;
       if (!id) { state.discount = { type: 'fixed', value: 0, label: '' }; }
@@ -427,7 +468,6 @@
     const today = todayISO();
     const counts = {
       orders: allRecords.filter(r => r.status !== 'paid' && r.status !== 'cancel' && r.dateISO === today).length,
-      tables: TABLES[state.storeId].length,
       queue:  allRecords.filter(r => (r.status === 'new' || r.status === 'kitchen' || r.status === 'ready') && r.dateISO === today).length,
       dashboard: 0,
       history: allRecords.length,
@@ -556,34 +596,7 @@
     return `${h} ชม.`;
   }
 
-  function renderTablesTab(records) {
-    const today = todayISO();
-    const active = records.filter(r => r.type === 'dinein' && r.dateISO === today && r.status !== 'paid' && r.status !== 'cancel');
-    const byTable = {};
-    active.forEach(r => { if (r.table) byTable[r.table] = (byTable[r.table] || 0) + 1; });
-    const tables = TABLES[state.storeId];
-    return `
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
-        <div style="font-size:13px;color:var(--muted)">โต๊ะทั้งหมด: <b>${tables.length}</b> · ใช้งาน: <b>${Object.keys(byTable).length}</b></div>
-        <div style="display:flex;gap:8px">
-          <button class="ghost-btn" id="merge-tables">รวมโต๊ะ</button>
-          <button class="ghost-btn" id="move-tables">ย้ายโต๊ะ</button>
-        </div>
-      </div>
-      <div class="table-grid">
-        ${tables.map(t => {
-          const busy = byTable[t.no] || 0;
-          return `
-            <button class="table-cell ${busy ? 'occupied' : ''}" data-table="${t.no}">
-              <div class="table-no">${t.no}</div>
-              <div class="table-seats">${t.seats} ที่นั่ง</div>
-              <div class="table-status ${busy ? 'busy' : 'free'}">${busy ? `${busy} ออเดอร์` : 'ว่าง'}</div>
-            </button>
-          `;
-        }).join('')}
-      </div>
-    `;
-  }
+  // (renderTablesTab removed — table system retired in favour of order types)
 
   function renderQueueTab(records) {
     const today = todayISO();
@@ -699,7 +712,7 @@
                 <tr style="border-top:1px solid var(--border)">
                   <td style="padding:10px 14px;font-family:var(--font-num);font-weight:600">#${r.orderId}</td>
                   <td style="padding:10px 14px;color:var(--muted)">${when.toLocaleString('th-TH', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}</td>
-                  <td style="padding:10px 14px">${(ORDER_TYPES.find(t => t.id === r.type) || {}).label || '-'}${r.table ? ' · โต๊ะ ' + r.table : ''}</td>
+                  <td style="padding:10px 14px">${formatOrderType(r)}</td>
                   <td style="padding:10px 14px"><span class="status-pill" style="background:${st.bg};color:${st.color}">${st.label}</span></td>
                   <td style="padding:10px 14px;text-align:right;font-family:var(--font-num);font-weight:600">${baht(r.total || 0)}</td>
                   <td style="padding:10px 14px;text-align:center"><button class="ghost-btn" style="padding:4px 10px;font-size:11px" data-reprint="${r.orderId}">🖨</button></td>
@@ -721,11 +734,8 @@
     });
     $$('[data-next]').forEach(b => b.onclick = (e) => { e.stopPropagation(); advanceOrder(b.dataset.next); });
     $$('[data-pay-order]').forEach(b => b.onclick = (e) => { e.stopPropagation(); payExistingOrder(b.dataset.payOrder); });
-    $$('[data-table]').forEach(b => b.onclick = () => { state.tableNo = b.dataset.table; setMode('customer'); });
     $$('[data-reprint]').forEach(b => b.onclick = () => printReceipt(b.dataset.reprint));
     const newBtn = $('#btn-new-order'); if (newBtn) newBtn.onclick = () => setMode('customer');
-    const merge = $('#merge-tables'); if (merge) merge.onclick = () => toast('เลือกออเดอร์ที่ต้องการรวม (เร็วๆ นี้)');
-    const move = $('#move-tables');  if (move)  move.onclick  = () => toast('เลือกออเดอร์ที่ต้องการย้าย (เร็วๆ นี้)');
   }
 
   async function advanceOrder(orderId) {
@@ -744,8 +754,8 @@
     const r = list.find(x => x.orderId === orderId);
     if (!r) return;
     state.cart = (r.items || []).map(it => ({ ...it }));
-    state.orderType = r.type || 'dinein';
-    state.tableNo = r.table || '';
+    state.orderType = r.type || defaultOrderTypeFor(state.storeId);
+    state.deliveryPlatform = r.deliveryPlatform || '';
     state.customer = r.customer || '';
     state.note = r.note || '';
     state.discount = r.discount || { type: 'fixed', value: 0, label: '' };
@@ -1019,7 +1029,7 @@
         <div style="padding:24px">
           <div style="font-family:var(--font-num);font-size:40px;font-weight:700;text-align:center;letter-spacing:-.02em;color:var(--store);margin-bottom:14px">#${r.orderId}</div>
           <div style="display:grid;gap:8px;font-size:13px;margin-bottom:18px;padding:14px 16px;background:var(--surface-2);border-radius:12px">
-            <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">ประเภท</span><b>${(ORDER_TYPES.find(t => t.id === r.type) || {}).label}${r.table ? ' · โต๊ะ ' + r.table : ''}</b></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">ประเภท</span><b>${formatOrderType(r)}</b></div>
             <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">ยอดสุทธิ</span><b>${baht(r.total)}</b></div>
             ${r.paid ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">รับเงิน</span><b>${baht(r.paid)}</b></div>` : ''}
             ${r.change ? `<div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">เงินทอน</span><b>${baht(r.change)}</b></div>` : ''}
@@ -1114,7 +1124,7 @@
         <div style="background:var(--store);color:#fff;padding:20px 26px;display:flex;align-items:center;justify-content:space-between">
           <div>
             <div style="font-family:var(--font-num);font-size:26px;font-weight:700">#${r.orderId}</div>
-            <div style="font-size:13px;opacity:.9">${(ORDER_TYPES.find(t => t.id === r.type) || {}).label}${r.table ? ' · โต๊ะ ' + r.table : ''}</div>
+            <div style="font-size:13px;opacity:.9">${formatOrderType(r)}</div>
           </div>
           <span class="status-pill" style="background:rgba(255,255,255,.2);color:#fff">${st.label}</span>
           <button class="modal-close light" id="od-close">×</button>
@@ -1262,7 +1272,15 @@
     }
 
     if (kind === 'confirm') {
-      $('#confirm-close').onclick = () => { closeModal(); state.cart = []; state.tableNo = ''; state.customer = ''; state.note = ''; state.discount = { type: 'fixed', value: 0, label: '' }; render(); };
+      $('#confirm-close').onclick = () => {
+        closeModal();
+        state.cart = [];
+        state.deliveryPlatform = '';
+        state.customer = '';
+        state.note = '';
+        state.discount = { type: 'fixed', value: 0, label: '' };
+        render();
+      };
       $('#confirm-print').onclick = () => { printReceipt(state.modal.record.orderId); };
     }
   }
@@ -1303,7 +1321,8 @@
       createdAt: Date.now(),
       status: 'paid',
       type: state.orderType,
-      table: state.tableNo,
+      table: '',  // legacy field — table system removed
+      deliveryPlatform: state.orderType === 'delivery' ? state.deliveryPlatform : '',
       customer: state.customer,
       cashier: state.cashier,
       items: state.cart.map(l => ({ ...l, mods: l.mods || [], modLabels: l.modLabels || [] })),
@@ -1332,7 +1351,7 @@
           <h2>${s.name}</h2>
           <div class="receipt-meta">${s.tagline}</div>
           <div class="receipt-meta">${new Date(r.createdAt || Date.now()).toLocaleString('th-TH')}</div>
-          <div class="receipt-meta">บิล <b>#${r.orderId}</b> · ${(ORDER_TYPES.find(t => t.id === r.type) || {}).label}${r.table ? ' · โต๊ะ ' + r.table : ''}</div>
+          <div class="receipt-meta">บิล <b>#${r.orderId}</b> · ${formatOrderType(r)}</div>
         </div>
         ${(r.items || []).map(it => `
           <div class="receipt-line">

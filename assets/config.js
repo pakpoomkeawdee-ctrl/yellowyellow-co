@@ -32,6 +32,7 @@
       accentLight: '#EFF6FF',
       accentHue: 245,
       target: 30000,
+      orderTypes: ['takeaway', 'delivery'],     // ไม่มีนั่งทาน
     },
     pussorn: {
       id: 'pussorn',
@@ -49,6 +50,7 @@
       accentLight: '#FEF2F2',
       accentHue: 15,
       target: 90000,
+      orderTypes: ['dinein', 'takeaway', 'delivery'],
     },
     khaow: {
       id: 'khaow',
@@ -66,6 +68,7 @@
       accentLight: '#FFF7ED',
       accentHue: 55,
       target: 60000,
+      orderTypes: ['takeaway', 'delivery'],     // ไม่มีนั่งทาน
     },
   };
 
@@ -91,17 +94,26 @@
 
   /* ---------- Order types ---------- */
   const ORDER_TYPES = [
-    { id: 'dinein',   label: 'นั่งทาน',     en: 'Dine in'  },
-    { id: 'takeaway', label: 'กลับบ้าน',    en: 'Takeaway' },
-    { id: 'delivery', label: 'เดลิเวอรี่',  en: 'Delivery' },
+    { id: 'dinein',   label: 'นั่งทาน',     en: 'Dine-in',   icon: '🍽️' },
+    { id: 'takeaway', label: 'กลับบ้าน',    en: 'Takeaway',  icon: '🥡' },
+    { id: 'delivery', label: 'เดลิเวอรี่',  en: 'Delivery',  icon: '🛵' },
   ];
 
-  /* ---------- Tables (per store) ---------- */
-  const TABLES = {
-    nmtun:  Array.from({length: 8 }, (_, i) => ({ id: `nm-${i+1}`,  no: i+1, seats: 4 })),
-    pussorn:Array.from({length: 12}, (_, i) => ({ id: `ps-${i+1}`,  no: i+1, seats: 4 })),
-    khaow:  Array.from({length: 6 }, (_, i) => ({ id: `kh-${i+1}`,  no: i+1, seats: 2 })),
-  };
+  /* ---------- Delivery platforms (when type === 'delivery') ---------- */
+  const DELIVERY_PLATFORMS = [
+    { id: 'grab',      label: 'Grab',      color: '#00B14F' },
+    { id: 'lineman',   label: 'LINE MAN',  color: '#06C755' },
+    { id: 'foodpanda', label: 'foodpanda', color: '#D70F64' },
+    { id: 'robinhood', label: 'Robinhood', color: '#0F62FE' },
+    { id: 'shopee',    label: 'Shopee',    color: '#EE4D2D' },
+    { id: 'other',     label: 'อื่นๆ',     color: '#525252' },
+  ];
+
+  /** Helper: get the order types allowed for a given store (with full label/icon). */
+  function orderTypesFor(storeId) {
+    const ids = STORES[storeId]?.orderTypes || ['takeaway'];
+    return ids.map(id => ORDER_TYPES.find(t => t.id === id)).filter(Boolean);
+  }
 
   /* ---------- Default promotions ---------- */
   const PROMOS = [
@@ -159,7 +171,9 @@
     SHEET_ID:    DEFAULT_SHEET_ID,
     STORES, STORE_IDS,
     STATUS_FLOW, PAYMENT_METHODS, ORDER_TYPES,
-    TABLES, PROMOS, SUPPLIERS, EMPLOYEES,
+    DELIVERY_PLATFORMS,
+    orderTypesFor,
+    PROMOS, SUPPLIERS, EMPLOYEES,
     fmt: { baht, numTH, todayISO, fmtDateTH, cx },
   };
 })(window);

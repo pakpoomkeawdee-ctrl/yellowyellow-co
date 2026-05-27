@@ -15,19 +15,24 @@
   const auth  = window.YY_AUTH;
   const MENUS = window.YY_MENUS;
   const api   = window.YY_API;
-  const { STORES, fmt } = cfg;
+  const { STORES, ORDER_TYPES, DELIVERY_PLATFORMS, orderTypesFor, fmt } = cfg;
   const { baht, numTH } = fmt;
 
   // ── State ──────────────────────────────────────────────────
   const storeId = auth.getStoreFromURL();
   const store   = STORES[storeId] || STORES.nmtun;
+  const allowedTypes = orderTypesFor(storeId);
+  const defaultType  = allowedTypes[0]?.id || 'takeaway';
+  const savedType    = localStorage.getItem(`yy.${storeId}.orderType`);
+  const initialType  = allowedTypes.find(t => t.id === savedType) ? savedType : defaultType;
 
   const state = {
-    activeCat:  null,            // null = show all
+    activeCat:  null,
     search:     '',
-    cart:       readCart(),      // [{ itemId, th, en, qty, unitPrice, total, opts:{} }]
+    cart:       readCart(),
     drawerOpen: false,
-    orderType:  localStorage.getItem(`yy.${storeId}.orderType`) || 'dinein', // 'dinein' | 'takeaway'
+    orderType:  initialType,
+    deliveryPlatform: localStorage.getItem(`yy.${storeId}.deliveryPlatform`) || '',
     activeOrderId: localStorage.getItem(`yy.${storeId}.activeOrder`) || '',
     pollTm: null,
   };
@@ -190,6 +195,28 @@
   function cartCount() { return state.cart.reduce((s, r) => s + r.qty, 0); }
   function cartTotal() { return state.cart.reduce((s, r) => s + r.total, 0); }
 
+  function renderOrderTypes() {
+    // Build buttons from store's allowed types
+    const row = document.getElementById('ot_row');
+    if (row && !row.dataset.built) {
+      row.innerHTML = allowedTypes.map(t => `
+        <button class="ot-btn" data-ot="${t.id}">
+          <span class="ot-emoji">${t.icon}</span>
+          <span class="ot-label">${t.label}</span>
+        </button>
+      `).join('');
+      row.dataset.built = '1';
+    }
+    // Build delivery platform chips once
+    const dpRow = document.getElementById('dp_row');
+    if (dpRow && !dpRow.dataset.built) {
+      dpRow.innerHTML = DELIVERY_PLATFORMS.map(p => `
+        <button class="dp-btn" data-dp="${p.id}">${p.label}</button>
+      `).join('');
+      dpRow.dataset.built = '1';
+    }
+  }
+
   function renderCart() {
     const n = cartCount();
     const bar = document.getElementById('cart_bar');
@@ -197,9 +224,17 @@
     document.getElementById('cart_total').textContent = baht(cartTotal());
     bar.classList.toggle('show', n > 0);
 
+    renderOrderTypes();
+
     // Reflect orderType in toggle buttons
     document.querySelectorAll('#ot_row [data-ot]').forEach(b => {
       b.classList.toggle('on', b.dataset.ot === state.orderType);
+    });
+    // Show/hide delivery platform picker
+    const dpWrap = document.getElementById('dp_wrap');
+    if (dpWrap) dpWrap.classList.toggle('show', state.orderType === 'delivery');
+    document.querySelectorAll('#dp_row [data-dp]').forEach(b => {
+      b.classList.toggle('on', b.dataset.dp === state.deliveryPlatform);
     });
 
     // Drawer body
@@ -253,16 +288,24 @@
   async function placeOrder() {
     if (!state.cart.length) return;
     const subtotal = cartTotal();
-    const orderType = state.orderType; // 'dinein' | 'takeaway'
+    const orderType = state.orderType;
+
+    // Delivery requires a platform
+    if (orderType === 'delivery' && !state.deliveryPlatform) {
+      alert('โปรดเลือกแพลตฟอร์มเดลิเวอรี่ก่อน');
+      return;
+    }
 
     const orderId = await api.nextOrderNo(storeId);
+    const platform = orderType === 'delivery' ? state.deliveryPlatform : '';
     const record = {
       orderId,
       createdAt: Date.now(),
       updatedAt: Date.now(),
       status: 'new',
       type:    orderType,
-      table:   '',
+      table:   '',  // legacy field, always empty in new system
+      deliveryPlatform: platform,
       customer: '',
       subtotal,
       discount: 0,
@@ -271,7 +314,9 @@
       paid: 0,
       change: 0,
       paymentMethod: '',
-      cashier: 'ลูกค้า (QR)',
+      cashier: orderType === 'delivery' && platform
+        ? `เดลิเวอรี่ · ${(DELIVERY_PLATFORMS.find(p => p.id === platform) || {}).label || platform}`
+        : 'ลูกค้า (QR)',
       note: '',
       synced: false,
       dateISO: fmt.todayISO(),
@@ -423,12 +468,21 @@
 
     document.getElementById('place_btn').addEventListener('click', placeOrder);
 
-    // Order-type toggle (ทานที่นี่ / กลับบ้าน)
+    // Order-type toggle (per-store, e.g. dinein/takeaway/delivery)
     document.getElementById('ot_row').addEventListener('click', (e) => {
       const b = e.target.closest('[data-ot]');
       if (!b) return;
       state.orderType = b.dataset.ot;
       localStorage.setItem(`yy.${storeId}.orderType`, state.orderType);
+      renderCart();
+    });
+
+    // Delivery platform chips
+    document.getElementById('dp_row').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-dp]');
+      if (!b) return;
+      state.deliveryPlatform = b.dataset.dp;
+      localStorage.setItem(`yy.${storeId}.deliveryPlatform`, state.deliveryPlatform);
       renderCart();
     });
 

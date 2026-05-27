@@ -446,22 +446,23 @@
   /* ── Order-type toggle ───────────────────── */
   .ot-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
   .ot-btn {
     padding: 11px 10px;
     border-radius: 12px;
     border: 1.5px solid var(--border);
     background: var(--surface);
-    font-size: 13.5px;
+    font-size: 13px;
     font-weight: 600;
     color: var(--text-2);
-    display: flex; align-items: center; justify-content: center; gap: 6px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
     cursor: pointer;
     transition: all .15s;
-    min-height: 46px;
+    min-height: 56px;
   }
   .ot-btn:active { transform: scale(.98); }
   .ot-btn.on {
@@ -470,7 +471,38 @@
     border-color: var(--store);
     box-shadow: 0 4px 12px color-mix(in srgb, var(--store) 30%, transparent);
   }
-  .ot-emoji { font-size: 18px; }
+  .ot-emoji { font-size: 20px; line-height: 1; }
+  .ot-label { font-size: 12.5px; }
+
+  /* ── Delivery platform picker ────────────── */
+  .dp-wrap {
+    background: var(--surface-2);
+    border-radius: 10px;
+    padding: 8px;
+    margin-bottom: 10px;
+    display: none;
+  }
+  .dp-wrap.show { display: block; }
+  .dp-hint {
+    font-size: 11px; color: var(--muted);
+    margin-bottom: 6px; padding-left: 4px;
+  }
+  .dp-row {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .dp-btn {
+    padding: 7px 12px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    font-size: 12px; font-weight: 600;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: all .12s;
+    min-height: 32px;
+  }
+  .dp-btn.on { background: var(--store); color: #fff; border-color: var(--store); }
+  .dp-btn:active { transform: scale(.97); }
 </style>
 </head>
 <body>
@@ -520,9 +552,10 @@
   </div>
   <div class="drawer-body" id="drawer_body"></div>
   <div class="drawer-foot">
-    <div class="ot-row" id="ot_row">
-      <button class="ot-btn" data-ot="dinein"><span class="ot-emoji">🍽️</span> ทานที่นี่</button>
-      <button class="ot-btn" data-ot="takeaway"><span class="ot-emoji">🥡</span> กลับบ้าน</button>
+    <div class="ot-row" id="ot_row"><!-- buttons rendered by JS based on store config --></div>
+    <div class="dp-wrap" id="dp_wrap">
+      <div class="dp-hint">เลือกแพลตฟอร์มเดลิเวอรี่</div>
+      <div class="dp-row" id="dp_row"></div>
     </div>
     <div class="totals">
       <span>ยอดรวม</span>

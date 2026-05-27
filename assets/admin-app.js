@@ -323,6 +323,24 @@
       payBreak[k] = (payBreak[k] || 0) + (r.total || 0);
     });
 
+    // Order-type breakdown (dinein / takeaway / delivery)
+    const ORDER_TYPES = window.YY_CONFIG.ORDER_TYPES;
+    const DELIVERY_PLATFORMS = window.YY_CONFIG.DELIVERY_PLATFORMS || [];
+    const typeBreak = {};
+    const platformBreak = {};
+    paid.forEach(r => {
+      const t = r.type || 'unknown';
+      if (!typeBreak[t]) typeBreak[t] = { count: 0, revenue: 0 };
+      typeBreak[t].count++;
+      typeBreak[t].revenue += (r.total || 0);
+      if (t === 'delivery' && r.deliveryPlatform) {
+        const p = r.deliveryPlatform;
+        if (!platformBreak[p]) platformBreak[p] = { count: 0, revenue: 0 };
+        platformBreak[p].count++;
+        platformBreak[p].revenue += (r.total || 0);
+      }
+    });
+
     // Expenses
     const expenses = api.getExpenses(state.storeId).filter(e => e.dateISO >= dateRangeCutoff());
     const expenseTotal = expenses.reduce((a, e) => a + (+e.amount || 0), 0);
@@ -370,6 +388,45 @@
             }).join('') || '<div class="muted-2 text-center py-4">ยังไม่มีข้อมูล</div>'}
           </div>
         </div>
+      </div>
+
+      <!-- Order-type breakdown -->
+      <div class="card p-5 mb-6">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h3 class="font-semibold text-[15px]" style="font-family:var(--font-display)">ยอดขายตามประเภทออเดอร์</h3>
+          <span class="muted text-xs">${state.range === 'today' ? 'วันนี้' : state.range}</span>
+        </div>
+        <div class="grid sm:grid-cols-3 gap-3">
+          ${ORDER_TYPES.map(t => {
+            const data = typeBreak[t.id] || { count: 0, revenue: 0 };
+            const totalRev = Object.values(typeBreak).reduce((a, b) => a + b.revenue, 0);
+            const pct = totalRev ? Math.round(data.revenue / totalRev * 100) : 0;
+            return `
+              <div class="surface-2 rounded-xl p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs muted-2 font-semibold uppercase tracking-wider">${t.icon} ${t.label}</span>
+                  <span class="text-xs muted">${pct}%</span>
+                </div>
+                <div class="text-2xl font-bold num">${baht(data.revenue)}</div>
+                <div class="text-xs muted mt-1">${numTH(data.count)} ออเดอร์</div>
+                <div style="height:4px;background:var(--surface);border-radius:999px;margin-top:8px;overflow:hidden">
+                  <div style="height:100%;background:var(--accent,var(--store));width:${pct}%;transition:width .4s"></div>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+        ${Object.keys(platformBreak).length ? `
+          <div class="mt-4 pt-4" style="border-top:1px solid var(--border)">
+            <div class="text-xs muted-2 font-semibold uppercase tracking-wider mb-2">เดลิเวอรี่แยกตามแพลตฟอร์ม</div>
+            <div class="flex flex-wrap gap-2">
+              ${Object.entries(platformBreak).sort((a, b) => b[1].revenue - a[1].revenue).map(([k, v]) => {
+                const p = DELIVERY_PLATFORMS.find(p => p.id === k) || { label: k, color: '#666' };
+                return `<div class="pill" style="background:${p.color}22;color:${p.color};font-weight:600">
+                  ${p.label} · ${baht(v.revenue)} <span class="muted-2" style="font-weight:400">(${v.count})</span>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>` : ''}
       </div>
 
       <!-- Top items + alerts -->
@@ -645,7 +702,24 @@
    * ============================================================ */
   VIEW_RENDERERS.orders = function (root) {
     const records = filterByRange(getRecordsForStore(state.storeId)).sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
-    const filtered = state.search ? records.filter(r => (r.orderId + ' ' + (r.customer||'') + ' ' + (r.table||'')).toLowerCase().includes(state.search.toLowerCase())) : records;
+    const tf = state.typeFilter || 'all';
+    const allTypes  = cfg.ORDER_TYPES;
+    const platforms = cfg.DELIVERY_PLATFORMS || [];
+    const fmtType = (r) => {
+      const t = allTypes.find(x => x.id === r.type);
+      let s = t ? `${t.icon} ${t.label}` : (r.type || '-');
+      if (r.type === 'delivery' && r.deliveryPlatform) {
+        const p = platforms.find(p => p.id === r.deliveryPlatform);
+        if (p) s += ` · ${p.label}`;
+      }
+      // legacy
+      if (r.type === 'dinein' && r.table) s += ` · โต๊ะ ${r.table}`;
+      return s;
+    };
+    const byType = records.filter(r => tf === 'all' || r.type === tf);
+    const filtered = state.search
+      ? byType.filter(r => (r.orderId + ' ' + (r.customer||'') + ' ' + (r.deliveryPlatform||'')).toLowerCase().includes(state.search.toLowerCase()))
+      : byType;
     root.innerHTML = `
       <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
@@ -654,6 +728,12 @@
         </div>
         ${rangePicker()}
       </div>
+
+      <div class="flex flex-wrap gap-2 mb-4">
+        <button class="btn ${tf === 'all' ? 'btn-primary' : 'btn-soft'}" data-typef="all">ทั้งหมด</button>
+        ${allTypes.map(t => `<button class="btn ${tf === t.id ? 'btn-primary' : 'btn-soft'}" data-typef="${t.id}">${t.icon} ${t.label}</button>`).join('')}
+      </div>
+
       <div class="card overflow-x-auto">
         <table class="tbl">
           <thead><tr><th>เลขบิล</th><th>เวลา</th><th>ประเภท</th><th>สถานะ</th><th>ลูกค้า</th><th class="text-right">ยอด</th></tr></thead>
@@ -664,7 +744,7 @@
                 <tr>
                   <td><span class="mono font-semibold">#${r.orderId}</span></td>
                   <td class="num">${new Date(r.createdAt||0).toLocaleString('th-TH', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' })}</td>
-                  <td>${(ORDER_TYPES.find(t => t.id === r.type) || {}).label || '-'}${r.table ? ' · โต๊ะ ' + r.table : ''}</td>
+                  <td>${fmtType(r)}</td>
                   <td><span class="pill" style="background:${st.bg};color:${st.color};border-color:${st.bg}">${st.label}</span></td>
                   <td>${escHtml(r.customer || '-')}</td>
                   <td class="text-right num font-bold">${baht(r.total || 0)}</td>
@@ -677,6 +757,10 @@
       </div>
     `;
     bindRangePicker();
+    root.querySelectorAll('[data-typef]').forEach(b => b.onclick = () => {
+      state.typeFilter = b.dataset.typef;
+      renderView();
+    });
   };
 
   /* ============================================================
