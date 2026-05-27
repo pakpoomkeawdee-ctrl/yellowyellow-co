@@ -73,7 +73,9 @@
 
   /* ── Search ────────────────────────────────── */
   .search-wrap {
-    position: sticky; top: 60px; z-index: 40;
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 58px);
+    z-index: 40;
     background: var(--bg);
     padding: 10px 14px;
     border-bottom: 1px solid var(--border);
@@ -92,7 +94,9 @@
 
   /* ── Category strip ────────────────────────── */
   .cats {
-    position: sticky; top: 116px; z-index: 39;
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 114px);
+    z-index: 39;
     background: var(--bg);
     padding: 8px 14px 10px;
     display: flex; gap: 6px;

@@ -999,13 +999,18 @@
             </label>
           </div>
           <div data-opts class="space-y-1.5">
-            ${(g.options || []).map((o, oi) => `
-              <div class="flex items-center gap-2" data-oi="${oi}">
-                <input class="input flex-1 text-sm" data-opt="label" value="${escAttr(o.label)}" placeholder="ตัวเลือก เช่น ขนาดใหญ่"/>
-                <input class="input text-sm" data-opt="${g.basePriceMode === 'replace' ? 'absolutePrice' : 'extraPrice'}" type="number" min="0" step="1" value="${(g.basePriceMode === 'replace' ? o.absolutePrice : o.extraPrice) ?? 0}" placeholder="ราคา" style="width:90px"/>
-                <button class="btn btn-icon danger" data-opt-del title="ลบ">×</button>
+            ${(g.options || []).map((o, oi) => {
+              const disabled = o.enabled === false;
+              return `
+              <div class="flex items-center gap-1.5" data-oi="${oi}" style="${disabled ? 'opacity:.55' : ''}">
+                <button class="btn btn-icon" data-opt-toggle title="${disabled ? 'เปิดใช้' : 'ปิดใช้'}" style="padding:4px 8px;min-width:34px">${disabled ? '🚫' : '✓'}</button>
+                <input class="input flex-1 text-sm" data-opt="label" value="${escAttr(o.label)}" placeholder="ชื่อตัวเลือก"/>
+                <input class="input text-sm" data-opt="${g.basePriceMode === 'replace' ? 'absolutePrice' : 'extraPrice'}" type="number" min="0" step="1" value="${(g.basePriceMode === 'replace' ? o.absolutePrice : o.extraPrice) ?? 0}" placeholder="฿" style="width:78px"/>
+                <button class="btn btn-icon" data-opt-up   title="ขึ้น" ${oi === 0 ? 'disabled' : ''} style="padding:4px 6px;min-width:30px">↑</button>
+                <button class="btn btn-icon" data-opt-down title="ลง"  ${oi === (g.options.length - 1) ? 'disabled' : ''} style="padding:4px 6px;min-width:30px">↓</button>
+                <button class="btn btn-icon danger" data-opt-del title="ลบ" style="padding:4px 8px;min-width:30px">×</button>
               </div>
-            `).join('')}
+            `;}).join('')}
           </div>
           <button class="btn btn-soft text-xs mt-2" data-opt-add>+ เพิ่มตัวเลือก</button>
         </div>
@@ -1050,6 +1055,7 @@
         grpEl.querySelectorAll('[data-oi]').forEach(optEl => {
           const oi = +optEl.dataset.oi;
           const o  = g.options[oi];
+          // Value inputs
           optEl.querySelectorAll('[data-opt]').forEach(inp => {
             inp.oninput = () => {
               const field = inp.dataset.opt;
@@ -1057,6 +1063,26 @@
               else o[field] = inp.value;
             };
           });
+          // Toggle enabled/disabled
+          optEl.querySelector('[data-opt-toggle]').onclick = () => {
+            o.enabled = o.enabled === false ? true : false;
+            renderGroups();
+          };
+          // Reorder up
+          const upBtn = optEl.querySelector('[data-opt-up]');
+          if (upBtn) upBtn.onclick = () => {
+            if (oi === 0) return;
+            [g.options[oi - 1], g.options[oi]] = [g.options[oi], g.options[oi - 1]];
+            renderGroups();
+          };
+          // Reorder down
+          const dnBtn = optEl.querySelector('[data-opt-down]');
+          if (dnBtn) dnBtn.onclick = () => {
+            if (oi === g.options.length - 1) return;
+            [g.options[oi + 1], g.options[oi]] = [g.options[oi], g.options[oi + 1]];
+            renderGroups();
+          };
+          // Delete
           optEl.querySelector('[data-opt-del]').onclick = () => {
             g.options.splice(oi, 1);
             renderGroups();

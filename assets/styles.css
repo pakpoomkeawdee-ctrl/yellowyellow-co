@@ -173,6 +173,17 @@ body.no-scroll { overflow: hidden; touch-action: none; }
 }
 button:focus-visible, a:focus-visible { outline-offset: 4px; }
 
+/* Admin option editor rows — keep readable on tiny screens */
+@media (max-width: 480px) {
+  [data-oi] {
+    flex-wrap: wrap;
+    gap: 6px !important;
+  }
+  [data-oi] input.input.flex-1 { flex-basis: 100%; }
+  [data-oi] input[type="number"] { width: 76px !important; }
+  [data-oi] > button { min-height: 36px; min-width: 36px; }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

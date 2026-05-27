@@ -782,6 +782,52 @@
     const sections = MENUS[state.storeId];
     const item = sections.flatMap(s => s.items).find(i => i.id === itemId);
     if (!item) return;
+
+    // Use shared customizer when available — covers new optionGroups + legacy
+    if (window.YY_CUSTOMIZER) {
+      const storeColor = (window.YY_CONFIG?.STORES?.[state.storeId]?.accent) || '#1E40AF';
+      const editingIdx = state.editIndex;
+      window.YY_CUSTOMIZER.open(item, {
+        storeColor,
+        mode: 'staff',
+        editing: editing || null,
+        emoji: item.tempOptions ? '🥛' : (item.proteins ? '🍲' : '🍽️'),
+        onConfirm: (r) => {
+          const line = {
+            itemId: item.id, th: item.th, en: item.en,
+            // Legacy keys (so cart rendering + sheet sync stay compatible)
+            temp:    r.legacy.temp    || '',
+            size:    r.legacy.size    || '',
+            protein: r.legacy.protein || '',
+            type:    r.legacy.type    || '',
+            sauce:   r.legacy.sauce   || '',
+            sweet:   r.legacy.sweet   || '',
+            spice:   r.legacy.spice   || '',
+            tempLabel: r.legacy.temp || '',
+            sizeLabel: r.legacy.size || '',
+            mods:      (r.mods || []).map(m => m.id),
+            modLabels: (r.mods || []).map(m => m.label),
+            // New schema (preserved for richer rendering)
+            choices: r.choices,
+            summary: r.summary,
+            qty:   r.qty,
+            unit:  r.unitPrice,
+            total: r.totalPrice,
+            note:  r.note,
+          };
+          if (editing != null && editingIdx >= 0) {
+            state.cart[editingIdx] = line;
+            state.editIndex = -1;
+          } else {
+            state.cart.push(line);
+          }
+          render();
+        },
+      });
+      return;
+    }
+
+    // Fallback to legacy customizer if customizer.js missing
     state.modal = { kind: 'customizer', item, editing: editing || null, editIndex: state.editIndex };
     const e = editing || {};
     state.cust = {
