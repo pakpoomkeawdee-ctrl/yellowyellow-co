@@ -1206,7 +1206,20 @@
 
     // Cancel / Save
     document.getElementById('ie_cancel').onclick = closeModal;
-    document.getElementById('ie_save').onclick = () => {
+    document.getElementById('ie_save').onclick = (ev) => {
+      const btn = ev.currentTarget;
+      const doSave = () => {
+        const out = saveOutObject();
+        if (!out) return;
+        MS.upsertItem(state.storeId, out);
+        closeModal();
+        (window.YY_UI ? window.YY_UI.toast(isNew ? 'เพิ่มเมนูแล้ว' : 'บันทึกแล้ว', 'ok') : toast(isNew ? 'เพิ่มเมนูแล้ว' : 'บันทึกแล้ว', 'ok'));
+        renderView();
+      };
+      if (window.YY_UI) window.YY_UI.withLock(btn, async () => doSave(), { label: 'กำลังบันทึก...' });
+      else doSave();
+    };
+    function saveOutObject() {
       const out = {
         ...data,
         th:        document.getElementById('ie_th').value.trim(),
@@ -1229,14 +1242,10 @@
         })),
       })).filter(g => g.name && g.options.length);
 
-      if (!out.th)  { alert('ใส่ชื่อเมนูภาษาไทย'); return; }
-      if (!out.cat) { alert('เลือกหมวด'); return; }
-
-      MS.upsertItem(state.storeId, out);
-      closeModal();
-      toast(isNew ? 'เพิ่มเมนูแล้ว' : 'บันทึกแล้ว', 'ok');
-      renderView();
-    };
+      if (!out.th)  { (window.YY_UI ? window.YY_UI.toast('ใส่ชื่อเมนูภาษาไทย', 'er') : alert('ใส่ชื่อเมนูภาษาไทย')); return null; }
+      if (!out.cat) { (window.YY_UI ? window.YY_UI.toast('เลือกหมวด', 'er') : alert('เลือกหมวด')); return null; }
+      return out;
+    }
   }
 
   function openCategoryEditor(cat) {
@@ -1781,26 +1790,31 @@
       </div>
     `;
 
-    // PIN save handlers
+    // PIN save handlers (with click lock)
     root.querySelectorAll('[data-savepin]').forEach(btn => {
-      btn.onclick = () => {
-        const scope = btn.dataset.savepin;
-        if (scope === 'super') {
-          const v = root.querySelector('[data-pin="super:_global"]').value.trim();
-          if (!v) return;
-          const r = auth.setPin('super', null, v);
-          if (r.ok) { toast('บันทึก PIN Super Admin แล้ว', 'ok'); }
-          else      { toast(r.error, 'er'); }
-        } else {
-          const sv = root.querySelector(`[data-pin="staff:${scope}"]`).value.trim();
-          const av = root.querySelector(`[data-pin="admin:${scope}"]`).value.trim();
-          let saved = 0, err = null;
-          if (sv) { const r = auth.setPin('staff', scope, sv); if (r.ok) saved++; else err = r.error; }
-          if (av) { const r = auth.setPin('admin', scope, av); if (r.ok) saved++; else err = r.error; }
-          if (err) toast(err, 'er');
-          else if (saved) toast(`บันทึก PIN ${STORES[scope].shortName} แล้ว (${saved})`, 'ok');
-          else toast('ใส่ PIN ใหม่ก่อน', 'info');
-        }
+      btn.onclick = (ev) => {
+        const b = ev.currentTarget;
+        const scope = b.dataset.savepin;
+        const doSave = () => {
+          if (scope === 'super') {
+            const v = root.querySelector('[data-pin="super:_global"]').value.trim();
+            if (!v) { toast('ใส่ PIN ใหม่ก่อน', 'info'); return; }
+            const r = auth.setPin('super', null, v);
+            if (r.ok) toast('บันทึก PIN Super Admin แล้ว', 'ok');
+            else      toast(r.error, 'er');
+          } else {
+            const sv = root.querySelector(`[data-pin="staff:${scope}"]`).value.trim();
+            const av = root.querySelector(`[data-pin="admin:${scope}"]`).value.trim();
+            let saved = 0, err = null;
+            if (sv) { const r = auth.setPin('staff', scope, sv); if (r.ok) saved++; else err = r.error; }
+            if (av) { const r = auth.setPin('admin', scope, av); if (r.ok) saved++; else err = r.error; }
+            if (err) toast(err, 'er');
+            else if (saved) toast(`บันทึก PIN ${STORES[scope].shortName} แล้ว (${saved})`, 'ok');
+            else toast('ใส่ PIN ใหม่ก่อน', 'info');
+          }
+        };
+        if (window.YY_UI) window.YY_UI.withLock(b, async () => doSave(), { label: 'กำลังบันทึก...' });
+        else doSave();
       };
     });
 
@@ -1819,15 +1833,22 @@
       };
     });
 
-    $('#set_save').onclick = () => {
-      api.setApiUrl($('#set_api').value.trim());
-      toast('บันทึก URL แล้ว', 'ok'); renderShell();
+    $('#set_save').onclick = (ev) => {
+      const btn = ev.currentTarget;
+      const doIt = () => { api.setApiUrl($('#set_api').value.trim()); toast('บันทึก URL แล้ว', 'ok'); renderShell(); };
+      if (window.YY_UI) window.YY_UI.withLock(btn, async () => doIt(), { label: 'กำลังบันทึก...' });
+      else doIt();
     };
-    $('#set_ping').onclick = async () => {
-      api.setApiUrl($('#set_api').value.trim());
-      $('#set_ping_result').textContent = 'กำลังทดสอบ...';
-      const r = await api.ping();
-      $('#set_ping_result').textContent = r.ok ? `✓ เชื่อมต่อสำเร็จ (v${r.v || '?'})` : `✗ ${r.error}`;
+    $('#set_ping').onclick = (ev) => {
+      const btn = ev.currentTarget;
+      const doIt = async () => {
+        api.setApiUrl($('#set_api').value.trim());
+        $('#set_ping_result').textContent = 'กำลังทดสอบ...';
+        const r = await api.ping();
+        $('#set_ping_result').textContent = r.ok ? `✓ เชื่อมต่อสำเร็จ (v${r.v || '?'})` : `✗ ${r.error}`;
+      };
+      if (window.YY_UI) window.YY_UI.withLock(btn, doIt, { label: 'กำลังทดสอบ...' });
+      else doIt();
     };
     $('#set_sync').onclick = () => { api.syncQueue(); toast('กำลังซิงค์...', 'info'); };
     $('#set_pull').onclick = async () => {

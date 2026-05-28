@@ -503,6 +503,28 @@
   }
   .dp-btn.on { background: var(--store); color: #fff; border-color: var(--store); }
   .dp-btn:active { transform: scale(.97); }
+
+  /* Missing-required highlight (shake + red ring) */
+  .ot-row.miss, .dp-wrap.miss {
+    animation: shakeMiss .35s cubic-bezier(.36,.07,.19,.97);
+    outline: 2px solid #FCA5A5;
+    outline-offset: 4px;
+    border-radius: 12px;
+  }
+  @keyframes shakeMiss {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+    40%, 60% { transform: translate3d(3px, 0, 0); }
+  }
+
+  /* ── Mobile: kill sticky hover/active on touch devices ── */
+  @media (hover: none) {
+    .item:hover, .add-btn:hover, .cat-chip:hover, .ot-btn:hover,
+    .dp-btn:hover, .place-btn:hover, .qty button:hover,
+    .head-call:hover, .back:hover, .drawer-x:hover,
+    .cart-btn:hover, .tracker-close:hover { background: inherit; border-color: inherit; }
+  }
 </style>
 </head>
 <body>
@@ -584,6 +606,7 @@
 <script src="./assets/menu-store.js"></script>
 <script src="./assets/api.js"></script>
 <script src="./assets/auth.js"></script>
+<script src="./assets/ui.js"></script>
 <script src="./assets/customizer.js"></script>
 <script src="./assets/menu-app.js"></script>
 </body>

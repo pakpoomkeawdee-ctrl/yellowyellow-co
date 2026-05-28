@@ -134,6 +134,19 @@
         font-weight: 600;
         margin-left: auto;
       }
+      .yy-cust-group.miss .yy-cust-group-th { color: #DC2626; }
+      .yy-cust-group.miss { animation: yyShake .35s cubic-bezier(.36,.07,.19,.97); }
+      .yy-cust-group.miss .yy-chip-row {
+        outline: 2px solid #FCA5A5;
+        outline-offset: 4px;
+        border-radius: 12px;
+      }
+      @keyframes yyShake {
+        10%, 90% { transform: translate3d(-1px, 0, 0); }
+        20%, 80% { transform: translate3d(2px, 0, 0); }
+        30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+        40%, 60% { transform: translate3d(3px, 0, 0); }
+      }
       .yy-chip-row {
         display: flex; flex-wrap: wrap; gap: 7px;
       }
@@ -361,15 +374,17 @@
   }
 
   // ── Build initial choices from item or editing line ────────
+  // IMPORTANT: never auto-select for a fresh order. Only pre-fill when
+  // the user is EDITING an existing cart line (so their previous choices stay).
   function initialChoices(groups, editing) {
     const c = { byGroup: {}, mods: new Set() };
     const e = editing || {};
+    const isEditing = !!editing;
 
     groups.forEach(g => {
       if (g.multi) {
-        // Pre-select from editing.mods if any IDs match
         const set = new Set();
-        if (Array.isArray(e.mods)) {
+        if (isEditing && Array.isArray(e.mods)) {
           e.mods.forEach(m => {
             const id = typeof m === 'string' ? m : (m.id || m.label);
             if (g.options.find(o => o.id === id || o.label === id)) set.add(id);
@@ -377,26 +392,25 @@
         }
         c.byGroup[g.id] = set;
       } else {
-        // Try to match editing values (legacy and new schemas)
         let picked = null;
-        if (g.id === 'temp')     picked = e.temp;
-        if (g.id === 'size')     picked = e.size;
-        if (g.id === 'types')    picked = e.type;
-        if (g.id === 'proteins') picked = e.protein;
-        if (g.id === 'sauces')   picked = e.sauce;
-        if (g.id === 'sweetness')picked = e.sweet;
-        if (g.id === 'spice')    picked = e.spice;
-        if (e.choices && e.choices[g.id]) picked = e.choices[g.id];
-        // Validate
-        let pickedId = picked;
-        if (picked && !g.options.find(o => o.id === picked || o.label === picked)) pickedId = null;
-        // Map label → id if needed
+        if (isEditing) {
+          if (g.id === 'temp')     picked = e.temp;
+          if (g.id === 'size')     picked = e.size;
+          if (g.id === 'types')    picked = e.type;
+          if (g.id === 'proteins') picked = e.protein;
+          if (g.id === 'sauces')   picked = e.sauce;
+          if (g.id === 'sweetness')picked = e.sweet;
+          if (g.id === 'spice')    picked = e.spice;
+          if (e.choices && e.choices[g.id]) picked = e.choices[g.id];
+        }
+        // Validate against current options
+        let pickedId = picked || null;
+        if (pickedId && !g.options.find(o => o.id === pickedId || o.label === pickedId)) pickedId = null;
         if (pickedId) {
           const m = g.options.find(o => o.id === pickedId || o.label === pickedId);
           pickedId = m ? m.id : null;
         }
-        // Default: first option for required, null for optional
-        if (!pickedId && g.required && g.options[0]) pickedId = g.options[0].id;
+        // Fresh order: stays null. Required groups will be validated on submit.
         c.byGroup[g.id] = pickedId;
       }
     });
@@ -473,7 +487,7 @@
     const isEdit = !!opts.editing;
 
     const groupsHtml = groups.map(g => `
-      <div class="yy-cust-group">
+      <div class="yy-cust-group" data-gid="${escAttr(g.id)}">
         <div class="yy-cust-group-h">
           <span class="yy-cust-group-th">${escHtml(g.name)}</span>
           ${g.en ? `<span class="yy-cust-group-en">${escHtml(g.en)}</span>` : ''}
@@ -577,11 +591,13 @@
           if (set.has(optId)) { set.delete(optId); chip.classList.remove('is-active'); }
           else                { set.add(optId);    chip.classList.add('is-active'); }
         } else {
-          // Single select: remove .is-active from siblings, add to clicked
           row.querySelectorAll('.yy-chip').forEach(c => c.classList.remove('is-active'));
           chip.classList.add('is-active');
           activeState.choices.byGroup[groupId] = optId;
         }
+        // Clear the missing-required flag if we just filled this group
+        const grp = chip.closest('.yy-cust-group');
+        if (grp) grp.classList.remove('miss');
         refreshFooter();
       });
     });
@@ -593,12 +609,22 @@
     // Confirm
     document.getElementById('yy-cust-add').onclick = () => {
       const { item, groups, choices, qty, note, opts } = activeState;
-      // Validate required groups (single-select must have a pick)
+      // Validate required groups: highlight + scroll to first missing
+      const card = activeBd.querySelector('#yy-cust-card');
+      let firstMissing = null;
+      card.querySelectorAll('.yy-cust-group.miss').forEach(el => el.classList.remove('miss'));
       for (const g of groups) {
         if (g.required && !g.multi && !choices.byGroup[g.id]) {
-          alert('โปรดเลือก ' + g.name);
-          return;
+          const el = card.querySelector(`.yy-cust-group[data-gid="${g.id}"]`);
+          if (el) {
+            el.classList.add('miss');
+            if (!firstMissing) firstMissing = el;
+          }
         }
+      }
+      if (firstMissing) {
+        firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return; // block submit
       }
       const unit  = compute(item, groups, choices);
       const total = unit * qty;
@@ -613,7 +639,6 @@
         legacy: sum.legacy,    // legacy keys for pos-app cart compat
         summary: sum.lines,
       };
-      // Convert Sets → arrays for serialisation
       Object.keys(result.choices).forEach(k => {
         if (result.choices[k] instanceof Set) result.choices[k] = Array.from(result.choices[k]);
       });

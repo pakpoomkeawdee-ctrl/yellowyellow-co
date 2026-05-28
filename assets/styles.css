@@ -192,6 +192,20 @@ button:focus-visible, a:focus-visible { outline-offset: 4px; }
   }
 }
 
+/* ── Touch devices: avoid sticky :hover after tap ─────────── */
+@media (hover: none) {
+  /* Apply hover effects only on real mouse devices, not finger-tap.
+     This prevents the "stuck active" look after tapping on mobile. */
+  *:hover { transition-duration: 0s !important; }
+}
+/* Always remove the grey iOS tap flash */
+a, button, [role="button"], [data-tap] {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+/* Faster touch response (no 300ms click delay) */
+html { touch-action: manipulation; }
+
 /* Print-friendly: hide nav/sidebar/overlay */
 @media print {
   .no-print, header, nav, aside, .mobile-tabs, .modal-bd, .yy-toast, .yy-offline { display: none !important; }

@@ -22,17 +22,14 @@
   const storeId = auth.getStoreFromURL();
   const store   = STORES[storeId] || STORES.nmtun;
   const allowedTypes = orderTypesFor(storeId);
-  const defaultType  = allowedTypes[0]?.id || 'takeaway';
-  const savedType    = localStorage.getItem(`yy.${storeId}.orderType`);
-  const initialType  = allowedTypes.find(t => t.id === savedType) ? savedType : defaultType;
-
+  // No default selection — user must explicitly pick (neutral initial state)
   const state = {
     activeCat:  null,
     search:     '',
     cart:       readCart(),
     drawerOpen: false,
-    orderType:  initialType,
-    deliveryPlatform: localStorage.getItem(`yy.${storeId}.deliveryPlatform`) || '',
+    orderType:  '',                 // empty = nothing pre-selected
+    deliveryPlatform: '',
     activeOrderId: localStorage.getItem(`yy.${storeId}.activeOrder`) || '',
     pollTm: null,
   };
@@ -290,9 +287,19 @@
     const subtotal = cartTotal();
     const orderType = state.orderType;
 
+    // Must pick an order type first (no auto-default)
+    if (!orderType) {
+      const row = document.getElementById('ot_row');
+      if (row) { row.classList.add('miss'); setTimeout(() => row.classList.remove('miss'), 700); }
+      toast('โปรดเลือกประเภทออเดอร์ (ทานที่นี่ / กลับบ้าน / เดลิเวอรี่)');
+      return;
+    }
+
     // Delivery requires a platform
     if (orderType === 'delivery' && !state.deliveryPlatform) {
-      alert('โปรดเลือกแพลตฟอร์มเดลิเวอรี่ก่อน');
+      const dp = document.getElementById('dp_wrap');
+      if (dp) { dp.classList.add('miss'); setTimeout(() => dp.classList.remove('miss'), 700); }
+      toast('โปรดเลือกแพลตฟอร์มเดลิเวอรี่');
       return;
     }
 
@@ -466,7 +473,14 @@
       setQty(i, state.cart[i].qty + delta);
     });
 
-    document.getElementById('place_btn').addEventListener('click', placeOrder);
+    document.getElementById('place_btn').addEventListener('click', (e) => {
+      const btn = e.currentTarget;
+      // Pre-validate before locking the button so user gets feedback fast
+      if (!state.cart.length) return;
+      if (!state.orderType) { placeOrder(); return; }
+      if (state.orderType === 'delivery' && !state.deliveryPlatform) { placeOrder(); return; }
+      window.YY_UI.withLock(btn, () => placeOrder(), { label: 'กำลังส่ง...' });
+    });
 
     // Order-type toggle (per-store, e.g. dinein/takeaway/delivery)
     document.getElementById('ot_row').addEventListener('click', (e) => {

@@ -445,15 +445,20 @@
 <script src="assets/menu-store.js"></script>
 <script src="assets/api.js"></script>
 <script src="assets/auth.js"></script>
+<script src="assets/ui.js"></script>
 <script src="assets/customizer.js"></script>
 <script>
-  // ── Auth guard: redirect to start.html if not authed ──────────
+  // ── Auth guard: lock page until valid PIN ─────────────────────
+  // Uses in-page modal so URL navigation / cached state can never
+  // reveal protected content even for a frame.
   (function () {
     const auth = window.YY_AUTH;
     const storeId = auth.getStoreFromURL();
-    if (!auth.isAuthed('staff', storeId) && !auth.isAuthed('admin', storeId) && !auth.isAuthed('super')) {
-      location.replace('./start.html');
-    }
+    if (auth.isAuthed('staff', storeId) || auth.isAuthed('admin', storeId) || auth.isAuthed('super')) return;
+    // Not authed → require staff PIN (admin/super also accepted because tryPin('staff') is the lowest bar)
+    auth.guard('staff', storeId, () => {
+      // Booted; pos-app.js will pick it up
+    });
   })();
 </script>
 <script src="assets/pos-app.js"></script>

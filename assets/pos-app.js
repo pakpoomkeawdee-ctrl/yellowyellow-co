@@ -1218,7 +1218,11 @@
       $$('[data-method]').forEach(b => b.onclick = () => { state.modal.method = b.dataset.method; renderModal(); });
       const recv = $('#pay-received'); if (recv) recv.oninput = (e) => { state.modal.received = e.target.value; renderModal(); };
       $$('[data-preset]').forEach(b => b.onclick = () => { state.modal.received = b.dataset.preset; renderModal(); });
-      $('#pay-confirm').onclick = () => completePayment();
+      $('#pay-confirm').onclick = (e) => {
+        const btn = e.currentTarget;
+        if (window.YY_UI) window.YY_UI.withLock(btn, () => completePayment(), { label: 'กำลังบันทึก...' });
+        else completePayment();
+      };
       if (state.modal.method === 'qr') {
         const el = $('#pay-qr');
         if (el && window.QRCode) {
